@@ -1,6 +1,12 @@
+import com.sun.source.tree.NewArrayTree;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.DatagramPacket;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class AnonGW {
@@ -107,9 +113,18 @@ public class AnonGW {
             ServerSocket ss = new ServerSocket(me.getPort());
 
             while(true){
+                //receber pedido do cliente
                 Socket client = ss.accept();
-                //Ler o pacote recebido do client
-                //enviar o pacote para me.getTargetServer()
+                InputStream in = client.getInputStream();
+                int count;
+                byte[] bufIn = new byte[1024];
+                while ((count = in.read(bufIn)) > 0);
+
+                //enviar pedido para o targetServer
+                Socket target = new Socket(me.getTargetServer(),me.getPort());
+                OutputStream out = target.getOutputStream();
+                byte[] bufOut = Arrays.copyOf(bufIn,bufIn.length);
+                out.write(bufOut);
                 client.close();
             }
         }
