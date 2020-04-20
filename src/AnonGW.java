@@ -163,8 +163,8 @@ public class AnonGW {
                 sendToTarget(target_out, buff);
                 buff = new byte[4098];
                 readFromTarget(target_in, buff);
+                target.close();
                 sendToClient(client_out, buff);
-
                 client.close();
             }
         }
