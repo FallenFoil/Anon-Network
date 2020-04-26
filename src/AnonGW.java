@@ -4,6 +4,8 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 public class AnonGW {
@@ -62,15 +64,38 @@ public class AnonGW {
         return sb.toString();
     }
 
-    public static void readFromClient(InputStream client_in, byte[] buff) throws IOException {
-        int clientInCount = 0;
+    public static byte[] readFromClient(InputStream client_in) throws IOException {
         System.out.println("Ler a Mensagem\n");
+
+        int clientInCount = 0;
+        int msgSize = 0;
+        List<byte[]> buffOfBuffs = new ArrayList<>();
+        byte[] buff = new byte[4096];
+
         while ((clientInCount = client_in.read(buff)) > 0){
-            if(clientInCount < 4098){
+            msgSize += clientInCount;
+            buffOfBuffs.add(buff);
+            // Alterar linha abaixo por devolver tamanho 4096 quando nao leu 4096 bytes do socket
+            buff = new byte[4096];
+            if(clientInCount < 4096){
                 break;
             }
         }
+        byte[] res = new byte[msgSize];
+        int index = 0;
+        for(byte[] arr: buffOfBuffs){
+            for(byte b : arr){
+                if(index >= msgSize){
+                    break;
+                }
+                else{
+                    res[index++] = b;
+                }
+            }
+        }
+
         System.out.println("Mensagem lida\n");
+        return res;
     }
 
     public static void sendToClient(OutputStream client_out, byte[] buff) throws IOException {
@@ -80,15 +105,39 @@ public class AnonGW {
         System.out.println("Resposta enviada\n");
     }
 
-    public static void readFromTarget(InputStream target_in, byte[] buff) throws IOException {
-        int targetInCount = 0;
+    public static byte[] readFromTarget(InputStream target_in) throws IOException {
         System.out.println("Receber resposta\n");
+
+        int targetInCount = 0;
+        int msgSize = 0;
+        List<byte[]> buffOfBuffs = new ArrayList<>();
+        byte[] buff = new byte[4096];
+
         while((targetInCount = target_in.read(buff)) > 0){
-            if(targetInCount < 4098){
+            msgSize += targetInCount;
+            buffOfBuffs.add(buff);
+            // Alterar linha abaixo por devolver tamanho 4096 quando nao leu 4096 bytes do socket
+            buff = new byte[4096];
+            if(targetInCount < 4096){
                 break;
             }
         }
+
+        byte[] res = new byte[msgSize];
+        int index = 0;
+        for(byte[] arr: buffOfBuffs){
+            for(byte b : arr){
+                if(index >= msgSize){
+                    break;
+                }
+                else{
+                    res[index++] = b;
+                }
+            }
+        }
+
         System.out.println("Resposta lida\n");
+        return res;
     }
 
     public static void sendToTarget(OutputStream target_out, byte[] buff) throws IOException {
@@ -158,14 +207,23 @@ public class AnonGW {
                 InputStream target_in = target.getInputStream();
                 OutputStream target_out = target.getOutputStream();
 
-                buff = new byte[4098];
-                readFromClient(client_in, buff);
-                sendToTarget(target_out, buff);
-                buff = new byte[4098];
-                readFromTarget(target_in, buff);
-                target.close();
-                sendToClient(client_out, buff);
-                client.close();
+                try{
+                    buff = readFromClient(client_in);
+                    System.out.println(new String(buff));
+                    sendToTarget(target_out, buff);
+                    buff = readFromTarget(target_in);
+                    System.out.println(new String(buff));
+                    sendToClient(client_out, buff);
+
+                    client.close();
+                    target.close();
+                }
+                catch(Exception e){
+                    client.close();
+                    target.close();
+                }
+
+                System.out.println("Connection closed");
             }
         }
         catch(Exception e){
