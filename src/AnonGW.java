@@ -73,12 +73,12 @@ public class AnonGW {
         while ((clientInCount = client_in.read(buff)) > 0){
             msgSize += clientInCount;
             buffOfBuffs.add(buff);
-            // Alterar linha abaixo por devolver tamanho 4096 quando nao leu 4096 bytes do socket
             buff = new byte[4096];
             if(clientInCount < 4096){
                 break;
             }
         }
+
         byte[] res = new byte[msgSize];
         int index = 0;
         for(byte[] arr: buffOfBuffs){
@@ -114,7 +114,7 @@ public class AnonGW {
         while((targetInCount = target_in.read(buff)) > 0){
             msgSize += targetInCount;
             buffOfBuffs.add(buff);
-            // Alterar linha abaixo por devolver tamanho 4096 quando nao leu 4096 bytes do socket
+
             buff = new byte[4096];
             if(targetInCount < 4096){
                 break;
@@ -145,15 +145,12 @@ public class AnonGW {
         System.out.println("Mensagem Enviada\n");
     }
 
-    public static void main(String[] args) {
+    private static boolean[] configure(String[] args, AnonGW me){
         boolean error = false;
-        int currentParams = 0;
-        int argumentIndex = 0;
-
         boolean checkTargetServer = false;
         boolean checkPort = false;
-
-        AnonGW me = new AnonGW();
+        int currentParams = 0;
+        int argumentIndex = 0;
 
         for(String arg : args){
             if(error){
@@ -211,6 +208,17 @@ public class AnonGW {
 
             argumentIndex++;
         }
+
+        return new boolean[]{error, checkTargetServer, checkPort};
+    }
+
+    public static void main(String[] args) {
+        AnonGW me = new AnonGW();
+
+        boolean[] configureRes = configure(args, me);
+        boolean error = configureRes[0];
+        boolean checkTargetServer = configureRes[1];
+        boolean checkPort = configureRes[2];
 
         if(error){
             System.out.println("An error occurred. Check if the parameters are correct.");
