@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,13 +69,10 @@ public class AnonGW {
         List<byte[]> buffOfBuffs = new ArrayList<>();
         byte[] buff = new byte[4096];
 
-        while ((clientInCount = client_in.read(buff)) > 0){
+        while ((clientInCount = client_in.read(buff)) != -1){
             msgSize += clientInCount;
             buffOfBuffs.add(buff);
             buff = new byte[4096];
-            if(clientInCount < 4096){
-                break;
-            }
         }
 
         byte[] res = new byte[msgSize];
@@ -111,14 +107,10 @@ public class AnonGW {
         List<byte[]> buffOfBuffs = new ArrayList<>();
         byte[] buff = new byte[4096];
 
-        while((targetInCount = target_in.read(buff)) > 0){
+        while((targetInCount = target_in.read(buff)) != -1){
             msgSize += targetInCount;
             buffOfBuffs.add(buff);
-
             buff = new byte[4096];
-            if(targetInCount < 4096){
-                break;
-            }
         }
 
         byte[] res = new byte[msgSize];
@@ -241,35 +233,7 @@ public class AnonGW {
             ServerSocket ss = new ServerSocket(me.getPort());
 
             while(true){
-                byte[] buff;
-
-                //Client
-                Socket client = ss.accept();
-                InputStream client_in = client.getInputStream();
-                OutputStream client_out = client.getOutputStream();
-
-                //targetServer
-                Socket target = new Socket(me.getTargetServer(),me.getPort());
-                InputStream target_in = target.getInputStream();
-                OutputStream target_out = target.getOutputStream();
-
-                try{
-                    buff = me.readFromClient(client_in);
-                    System.out.println(new String(buff));
-                    me.sendToTarget(target_out, buff);
-                    buff = me.readFromTarget(target_in);
-                    System.out.println(new String(buff));
-                    me.sendToClient(client_out, buff);
-
-                    client.close();
-                    target.close();
-                }
-                catch(Exception e){
-                    client.close();
-                    target.close();
-                }
-
-                System.out.println("Connection closed");
+                new Thread(new AnonGWClient(me, ss.accept())).start();
             }
         }
         catch(Exception e){
