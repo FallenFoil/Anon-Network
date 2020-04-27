@@ -4,8 +4,6 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 public class AnonGW {
@@ -64,7 +62,7 @@ public class AnonGW {
         return sb.toString();
     }
 
-    public static byte[] readFromClient(InputStream client_in) throws IOException {
+    public byte[] readFromClient(InputStream client_in) throws IOException {
         System.out.println("Ler a Mensagem\n");
 
         int clientInCount = 0;
@@ -98,14 +96,14 @@ public class AnonGW {
         return res;
     }
 
-    public static void sendToClient(OutputStream client_out, byte[] buff) throws IOException {
+    public void sendToClient(OutputStream client_out, byte[] buff) throws IOException {
         System.out.println("Enviar resposta\n");
         client_out.write(buff);
         client_out.flush();
         System.out.println("Resposta enviada\n");
     }
 
-    public static byte[] readFromTarget(InputStream target_in) throws IOException {
+    public byte[] readFromTarget(InputStream target_in) throws IOException {
         System.out.println("Receber resposta\n");
 
         int targetInCount = 0;
@@ -140,7 +138,7 @@ public class AnonGW {
         return res;
     }
 
-    public static void sendToTarget(OutputStream target_out, byte[] buff) throws IOException {
+    public void sendToTarget(OutputStream target_out, byte[] buff) throws IOException {
         System.out.println("Enviar a mensagem\n");
         target_out.write(buff);
         target_out.flush();
@@ -150,43 +148,83 @@ public class AnonGW {
     public static void main(String[] args) {
         boolean error = false;
         int currentParams = 0;
+        int argumentIndex = 0;
+
+        boolean checkTargetServer = false;
+        boolean checkPort = false;
 
         AnonGW me = new AnonGW();
 
         for(String arg : args){
-            if(!error){
-                switch(arg){
-                    case "target-server":
+            if(error){
+                break;
+            }
+
+            switch(arg){
+                case "target-server":
+                    if((currentParams != 0 && currentParams != 3) || argumentIndex == args.length - 1){
+                        error = true;
+                    }
+                    else{
                         currentParams = 1;
-                        break;
-                    case "port":
+                    }
+                    break;
+                case "port":
+                    if((currentParams != 0 && currentParams != 3) || argumentIndex == args.length - 1){
+                        error = true;
+                    }
+                    else{
                         currentParams = 2;
-                        break;
-                    case "overlay-peers":
+                    }
+                    break;
+                case "overlay-peers":
+                    if(currentParams != 0){
+                        error = true;
+                    }
+                    else{
                         currentParams = 3;
-                        break;
-                    default:
-                        if(currentParams == 1){
-                            me.setTargetServer(arg);
+                    }
+                    break;
+                default:
+                    if(currentParams == 1){
+                        me.setTargetServer(arg);
+                        checkTargetServer = true;
+                        currentParams = 0;
+                    }
+                    else{
+                        if(currentParams == 2){
+                            me.setPort(Integer.parseInt(arg));
+                            checkPort = true;
                             currentParams = 0;
                         }
                         else{
-                            if(currentParams == 2){
-                                me.setPort(Integer.parseInt(arg));
-                                currentParams = 0;
+                            if(currentParams == 3){
+                                me.addNodes(arg);
                             }
                             else{
-                                if(currentParams == 3){
-                                    me.addNodes(arg);
-                                }
-                                else{
-                                    error = true;
-                                }
+                                error = true;
                             }
                         }
-                        break;
-                }
+                    }
+                    break;
             }
+
+            argumentIndex++;
+        }
+
+        if(error){
+            System.out.println("An error occurred. Check if the parameters are correct.");
+            return;
+        }
+
+        if(!checkTargetServer){
+            System.out.println("Missing target server IP address.");
+            return;
+        }
+
+        if(!checkPort){
+            System.out.println("Missing port.");
+            return;
         }
 
         System.out.println(me.toString());
@@ -197,7 +235,7 @@ public class AnonGW {
             while(true){
                 byte[] buff;
 
-                //Cliente
+                //Client
                 Socket client = ss.accept();
                 InputStream client_in = client.getInputStream();
                 OutputStream client_out = client.getOutputStream();
@@ -208,12 +246,12 @@ public class AnonGW {
                 OutputStream target_out = target.getOutputStream();
 
                 try{
-                    buff = readFromClient(client_in);
+                    buff = me.readFromClient(client_in);
                     System.out.println(new String(buff));
-                    sendToTarget(target_out, buff);
-                    buff = readFromTarget(target_in);
+                    me.sendToTarget(target_out, buff);
+                    buff = me.readFromTarget(target_in);
                     System.out.println(new String(buff));
-                    sendToClient(client_out, buff);
+                    me.sendToClient(client_out, buff);
 
                     client.close();
                     target.close();
