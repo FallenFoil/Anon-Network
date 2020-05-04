@@ -1,9 +1,11 @@
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.*;
 
 public class AnonGW {
     private List<String> nodes;
@@ -61,83 +63,7 @@ public class AnonGW {
         return sb.toString();
     }
 
-    public byte[] readFromClient(InputStream client_in) throws IOException {
-        System.out.println("Ler a Mensagem\n");
-
-        int clientInCount = 0;
-        int msgSize = 0;
-        List<byte[]> buffOfBuffs = new ArrayList<>();
-        byte[] buff = new byte[4096];
-
-        while ((clientInCount = client_in.read(buff)) != -1){
-            msgSize += clientInCount;
-            buffOfBuffs.add(buff);
-            buff = new byte[4096];
-        }
-
-        byte[] res = new byte[msgSize];
-        int index = 0;
-        for(byte[] arr: buffOfBuffs){
-            for(byte b : arr){
-                if(index >= msgSize){
-                    break;
-                }
-                else{
-                    res[index++] = b;
-                }
-            }
-        }
-
-        System.out.println("Mensagem lida\n");
-        return res;
-    }
-
-    public void sendToClient(OutputStream client_out, byte[] buff) throws IOException {
-        System.out.println("Enviar resposta\n");
-        client_out.write(buff);
-        client_out.flush();
-        System.out.println("Resposta enviada\n");
-    }
-
-    public byte[] readFromTarget(InputStream target_in) throws IOException {
-        System.out.println("Receber resposta\n");
-
-        int targetInCount = 0;
-        int msgSize = 0;
-        List<byte[]> buffOfBuffs = new ArrayList<>();
-        byte[] buff = new byte[4096];
-
-        while((targetInCount = target_in.read(buff)) != -1){
-            msgSize += targetInCount;
-            buffOfBuffs.add(buff);
-            buff = new byte[4096];
-        }
-
-        byte[] res = new byte[msgSize];
-        int index = 0;
-        for(byte[] arr: buffOfBuffs){
-            for(byte b : arr){
-                if(index >= msgSize){
-                    break;
-                }
-                else{
-                    res[index++] = b;
-                }
-            }
-        }
-
-        System.out.println("Resposta lida\n");
-        return res;
-    }
-
-    public void sendToTarget(OutputStream target_out, byte[] buff) throws IOException {
-        System.out.println("Enviar a mensagem\n");
-        target_out.write(buff);
-        target_out.flush();
-        System.out.println("Mensagem Enviada\n");
-    }
-
-    private static boolean[] configure(String[] args, AnonGW me){
+    private static boolean init_configure(String[] args, AnonGW me){
         boolean error = false;
         boolean checkTargetServer = false;
         boolean checkPort = false;
@@ -201,43 +127,132 @@ public class AnonGW {
             argumentIndex++;
         }
 
-        return new boolean[]{error, checkTargetServer, checkPort};
+        if(error){
+            System.out.println("An error occurred. Check if the parameters are correct.");
+            return false;
+        }
+
+        if(!checkTargetServer){
+            System.out.println("Missing target server IP address.");
+            return false;
+        }
+
+        if(!checkPort){
+            System.out.println("Missing port.");
+            return false;
+        }
+
+        return true;
     }
 
     public static void main(String[] args) {
         AnonGW me = new AnonGW();
 
-        boolean[] configureRes = configure(args, me);
-        boolean error = configureRes[0];
-        boolean checkTargetServer = configureRes[1];
-        boolean checkPort = configureRes[2];
-
-        if(error){
-            System.out.println("An error occurred. Check if the parameters are correct.");
-            return;
-        }
-
-        if(!checkTargetServer){
-            System.out.println("Missing target server IP address.");
-            return;
-        }
-
-        if(!checkPort){
-            System.out.println("Missing port.");
+        if(!init_configure(args, me)){
             return;
         }
 
         System.out.println(me.toString());
 
-        try{
-            ServerSocket ss = new ServerSocket(me.getPort());
+        ServerSocketChannel serverChannel = null;
+        Selector selector = null;
 
-            while(true){
-                new Thread(new AnonGWClient(me, ss.accept())).start();
+        try{
+            System.out.println("Initializing server");
+            serverChannel = ServerSocketChannel.open();
+            serverChannel.configureBlocking(false);
+            serverChannel.socket().bind(new InetSocketAddress("127.0.0.1", 8511));
+
+            selector = Selector.open();
+
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+            Map<SocketChannel, byte[]> dataTracking = new HashMap<>();
+
+            System.out.println("Now accepting connections...");
+            while (!Thread.currentThread().isInterrupted()) {
+                selector.select();
+
+                Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
+
+                while (keys.hasNext()) {
+                    SelectionKey key = keys.next();
+                    keys.remove();
+
+                    if (!key.isValid()) {
+                        continue;
+                    }
+
+                    if (key.isAcceptable()) {
+                        System.out.println("Accepting connection");
+                        ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
+                        SocketChannel socketChannel = serverSocketChannel.accept();
+                        socketChannel.configureBlocking(false);
+
+                        socketChannel.register(selector, SelectionKey.OP_WRITE);
+                        byte[] hello = "Hello from server".getBytes();
+                        dataTracking.put(socketChannel, hello);
+                    }
+
+                    if (key.isWritable()) {
+                        System.out.println("Writing...");
+                        SocketChannel channel = (SocketChannel) key.channel();
+
+                        byte[] data = dataTracking.get(channel);
+                        dataTracking.remove(channel);
+
+                        channel.write(ByteBuffer.wrap(data));
+
+                        key.interestOps(SelectionKey.OP_READ);
+                    }
+
+                    if (key.isReadable()) {
+                        System.out.println("Reading connection");
+                        SocketChannel channel = (SocketChannel) key.channel();
+                        ByteBuffer readBuffer = ByteBuffer.allocate(1024);
+                        readBuffer.clear();
+
+                        int read;
+                        try {
+                            read = channel.read(readBuffer);
+                        }
+                        catch(IOException e) {
+                            e.printStackTrace();
+                            key.cancel();
+                            channel.close();
+                            return;
+                        }
+
+                        if (read == -1) {
+                            System.out.println("Nothing was there to be read, closing connection");
+                            channel.close();
+                            key.cancel();
+                            return;
+                        }
+
+                        readBuffer.flip();
+                        byte[] data = new byte[1000];
+                        readBuffer.get(data, 0, read);
+                        System.out.println("Received: " + new String(data));
+
+                        SocketChannel socketChannel = (SocketChannel) key.channel();
+                        dataTracking.put(socketChannel, data);
+                        key.interestOps(SelectionKey.OP_WRITE);
+                    }
+                }
             }
-        }
-        catch(Exception e){
+        } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            System.out.println("Closing server down");
+            try{
+                selector.close();
+                serverChannel.socket().close();
+                serverChannel.close();
+            }
+            catch(IOException e){
+                e.printStackTrace();
+            }
         }
     }
 }
