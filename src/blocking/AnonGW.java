@@ -3,16 +3,20 @@ package blocking;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class AnonGW {
     private List<String> nodes;
     private String targetServer;
     private int port;
+    private Random rand;
 
     public AnonGW(){
         this.nodes = new ArrayList<>();
+        this.rand = new Random();
     }
 
     public List<String> getNodes() {
@@ -37,6 +41,12 @@ public class AnonGW {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public String getRandomNode(){
+        int index = this.rand.nextInt(this.nodes.size());
+
+        return this.nodes.get(index);
     }
 
     public String toString(){
@@ -200,6 +210,11 @@ public class AnonGW {
 
         new Thread(new TCP(me)).start();
 
-        new Thread(new UDP(me)).start();
+        try{
+            new Thread(new UDP(me)).start();
+        }
+        catch(SocketException e){
+            e.printStackTrace();
+        }
     }
 }
