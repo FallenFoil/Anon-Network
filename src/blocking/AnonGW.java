@@ -3,7 +3,6 @@ package blocking;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -199,15 +198,8 @@ public class AnonGW {
 
         System.out.println(me.toString());
 
-        try{
-            ServerSocket ss = new ServerSocket(me.getPort());
+        new Thread(new TCP(me)).start();
 
-            while(true){
-                new Thread(new AnonGWClient(me, ss.accept())).start();
-            }
-        }
-        catch(Exception e){
-            e.printStackTrace();
-        }
+        new Thread(new UDP(me)).start();
     }
 }
