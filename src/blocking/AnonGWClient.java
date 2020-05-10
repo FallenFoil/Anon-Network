@@ -1,3 +1,7 @@
+package blocking;
+
+import blocking.AnonGW;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,12 +29,12 @@ public class AnonGWClient implements Runnable{
             InputStream target_in = target.getInputStream();
             OutputStream target_out = target.getOutputStream();
 
-            buff = this.anon.readFromClient(client_in);
+            buff = this.anon.read(client_in, 0);
             System.out.println(new String(buff));
-            this.anon.sendToTarget(target_out, buff);
-            buff = this.anon.readFromTarget(target_in);
+            this.anon.send(target_out, buff);
+            buff = this.anon.read(target_in, 1);
             System.out.println(new String(buff));
-            this.anon.sendToClient(client_out, buff);
+            this.anon.send(client_out, buff);
 
             client.close();
             target.close();

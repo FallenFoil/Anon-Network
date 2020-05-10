@@ -1,4 +1,5 @@
-import java.io.ByteArrayOutputStream;
+package blocking;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -17,10 +18,6 @@ public class AnonGW {
 
     public List<String> getNodes() {
         return nodes;
-    }
-
-    public void setNodes(List<String> nodes) {
-        this.nodes = nodes;
     }
 
     public void addNodes(String node){
@@ -62,19 +59,34 @@ public class AnonGW {
         return sb.toString();
     }
 
-    public byte[] readFromClient(InputStream client_in) throws IOException {
-        System.out.println("Ler a Mensagem\n");
+    public void send(OutputStream out, byte[] buff) throws IOException {
+        System.out.println("Enviar Mensagem\n");
+        out.write(buff);
+        out.flush();
+        System.out.println("Mensagem Enviada\n");
+    }
 
-        int clientInCount = 0;
+    /**
+     *
+     * @param in InputStream onde os bytes seram lidos
+     * @param flag Determina se é para receber do Cliente ou do Servidor
+     *
+     * @return Retorna os bytes lidos
+     */
+    public byte[] read(InputStream in, int flag) throws IOException {
+        System.out.println("Receber Mensagem\n");
+
+        int inCount = 0;
         int msgSize = 0;
         List<byte[]> buffOfBuffs = new ArrayList<>();
         byte[] buff = new byte[4096];
 
-        while ((clientInCount = client_in.read(buff, 0, 4096)) > 0){
-            msgSize += clientInCount;
+        while((inCount = in.read(buff)) > 0){
+            msgSize += inCount;
             buffOfBuffs.add(buff);
             buff = new byte[4096];
-            if(clientInCount < 4096){
+
+            if(flag == 0 && inCount < 4096){
                 break;
             }
         }
@@ -92,56 +104,11 @@ public class AnonGW {
             }
         }
 
-        System.out.println("Mensagem lida\n");
+        System.out.println("Mensagem Recebida\n");
         return res;
     }
 
-    public void sendToClient(OutputStream client_out, byte[] buff) throws IOException {
-        System.out.println("Enviar resposta\n");
-        client_out.write(buff);
-        client_out.flush();
-        System.out.println("Resposta enviada\n");
-    }
-
-    public byte[] readFromTarget(InputStream target_in) throws IOException {
-        System.out.println("Receber resposta\n");
-
-        int targetInCount = 0;
-        int msgSize = 0;
-        List<byte[]> buffOfBuffs = new ArrayList<>();
-        byte[] buff = new byte[4096];
-
-        while((targetInCount = target_in.read(buff)) > 0){
-            msgSize += targetInCount;
-            buffOfBuffs.add(buff);
-            buff = new byte[4096];
-        }
-
-        byte[] res = new byte[msgSize];
-        int index = 0;
-        for(byte[] arr: buffOfBuffs){
-            for(byte b : arr){
-                if(index >= msgSize){
-                    break;
-                }
-                else{
-                    res[index++] = b;
-                }
-            }
-        }
-
-        System.out.println("Resposta lida\n");
-        return res;
-    }
-
-    public void sendToTarget(OutputStream target_out, byte[] buff) throws IOException {
-        System.out.println("Enviar a mensagem\n");
-        target_out.write(buff);
-        target_out.flush();
-        System.out.println("Mensagem Enviada\n");
-    }
-
-    private static boolean[] configure(String[] args, AnonGW me){
+    private static boolean init_configure(String[] args, AnonGW me){
         boolean error = false;
         boolean checkTargetServer = false;
         boolean checkPort = false;
@@ -205,29 +172,28 @@ public class AnonGW {
             argumentIndex++;
         }
 
-        return new boolean[]{error, checkTargetServer, checkPort};
+        if(error){
+            System.out.println("An error occurred. Check if the parameters are correct.");
+            return false;
+        }
+
+        if(!checkTargetServer){
+            System.out.println("Missing target server IP address.");
+            return false;
+        }
+
+        if(!checkPort){
+            System.out.println("Missing port.");
+            return false;
+        }
+
+        return true;
     }
 
     public static void main(String[] args) {
         AnonGW me = new AnonGW();
 
-        boolean[] configureRes = configure(args, me);
-        boolean error = configureRes[0];
-        boolean checkTargetServer = configureRes[1];
-        boolean checkPort = configureRes[2];
-
-        if(error){
-            System.out.println("An error occurred. Check if the parameters are correct.");
-            return;
-        }
-
-        if(!checkTargetServer){
-            System.out.println("Missing target server IP address.");
-            return;
-        }
-
-        if(!checkPort){
-            System.out.println("Missing port.");
+        if(!init_configure(args, me)){
             return;
         }
 

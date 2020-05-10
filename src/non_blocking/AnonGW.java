@@ -1,3 +1,5 @@
+package non_blocking;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -50,6 +52,7 @@ public class AnonGW {
         sb.append("Target Server: ").append(this.targetServer).append("\n");
         sb.append("Port: ").append(this.port).append("\n");
         sb.append("Nodes: ");
+
         if(this.nodes.isEmpty()){
             sb.append("none\n");
         }
@@ -75,56 +78,56 @@ public class AnonGW {
                 break;
             }
 
-            switch(arg){
-                case "target-server":
-                    if((currentParams != 0 && currentParams != 3) || argumentIndex == args.length - 1){
-                        error = true;
-                    }
-                    else{
-                        currentParams = 1;
-                    }
-                    break;
-                case "port":
-                    if((currentParams != 0 && currentParams != 3) || argumentIndex == args.length - 1){
-                        error = true;
-                    }
-                    else{
-                        currentParams = 2;
-                    }
-                    break;
-                case "overlay-peers":
-                    if(currentParams != 0){
-                        error = true;
-                    }
-                    else{
-                        currentParams = 3;
-                    }
-                    break;
-                default:
-                    if(currentParams == 1){
-                        me.setTargetServer(arg);
-                        checkTargetServer = true;
-                        currentParams = 0;
-                    }
-                    else{
-                        if(currentParams == 2){
-                            me.setPort(Integer.parseInt(arg));
-                            checkPort = true;
-                            currentParams = 0;
-                        }
-                        else{
-                            if(currentParams == 3){
-                                me.addNodes(arg);
-                            }
-                            else{
-                                error = true;
-                            }
-                        }
-                    }
-                    break;
+        switch(arg){
+            case "target-server":
+                if((currentParams != 0 && currentParams != 3) || argumentIndex == args.length - 1){
+                    error = true;
+                }
+                else{
+                    currentParams = 1;
+                }
+                break;
+            case "port":
+                if((currentParams != 0 && currentParams != 3) || argumentIndex == args.length - 1){
+                    error = true;
+                }
+                else{
+                    currentParams = 2;
+                }
+                break;
+            case "overlay-peers":
+                if(currentParams != 0){
+                    error = true;
+                }
+                else{
+                    currentParams = 3;
+                }
+                break;
+        default:
+            if(currentParams == 1){
+                me.setTargetServer(arg);
+                checkTargetServer = true;
+                currentParams = 0;
             }
+            else{
+                if(currentParams == 2){
+                    me.setPort(Integer.parseInt(arg));
+                    checkPort = true;
+                    currentParams = 0;
+                }
+                else{
+                    if(currentParams == 3){
+                        me.addNodes(arg);
+                    }
+                    else{
+                        error = true;
+                    }
+                }
+            }
+            break;
+        }
 
-            argumentIndex++;
+        argumentIndex++;
         }
 
         if(error){
@@ -241,9 +244,11 @@ public class AnonGW {
                     }
                 }
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
-        } finally {
+        }
+        finally {
             System.out.println("Closing server down");
             try{
                 selector.close();
@@ -256,3 +261,4 @@ public class AnonGW {
         }
     }
 }
+
