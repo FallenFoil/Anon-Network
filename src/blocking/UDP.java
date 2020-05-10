@@ -10,26 +10,33 @@ public class UDP implements Runnable{
     private AnonGW anon;
     private DatagramSocket socket;
 
-    public UDP(AnonGW a) throws SocketException {
+    public UDP(AnonGW a){
         this.anon = a;
-        socket = new DatagramSocket(6666);
+
+        try{
+            socket = new DatagramSocket(6666);
+        }
+        catch(SocketException e){
+            e.printStackTrace();
+        }
+    }
+
+    public static void send(UDP_Packet udp_response) throws IOException {
+        DatagramSocket socket = new DatagramSocket();
+        socket.send(udp_response.toDatagramPacket());
+        socket.close();
     }
 
     @Override
     public void run() {
-        boolean first_packet = true;
-        byte[] buff = new byte[4096];
-
         while (true) {
+            byte[] buff = new byte[4096];
             DatagramPacket packet = new DatagramPacket(buff, buff.length);
 
             try {
                 socket.receive(packet);
 
-                InetAddress address = packet.getAddress();
-                int port = packet.getPort();
-
-                
+                new Thread(new UDP_Client(this.anon, packet)).start();
             }
             catch (IOException e){
                 e.printStackTrace();

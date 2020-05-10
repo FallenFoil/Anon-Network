@@ -3,27 +3,35 @@ package blocking;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class AnonGW {
-    private List<String> nodes;
+    private List<InetAddress> nodes;
     private String targetServer;
     private int port;
     private Random rand;
 
+    private Map<Integer, Client> my_clients;
+
+    private int next_client_ID;
+
+    private Lock lock;
+
     public AnonGW(){
         this.nodes = new ArrayList<>();
         this.rand = new Random();
+
+        this.my_clients = new HashMap<>();
+
+        this.next_client_ID = 0;
+
+        this.lock = new ReentrantLock();
     }
 
-    public List<String> getNodes() {
-        return nodes;
-    }
-
-    public void addNodes(String node){
+    public void addNodes(InetAddress node){
         this.nodes.add(node);
     }
 
@@ -43,10 +51,25 @@ public class AnonGW {
         this.port = port;
     }
 
-    public String getRandomNode(){
+    public InetAddress getRandomNode(){
         int index = this.rand.nextInt(this.nodes.size());
 
         return this.nodes.get(index);
+    }
+
+    public Client createNewClient(InetAddress addr, Socket so){
+        this.lock.lock();
+        int id = this.next_client_ID;
+        Client c = new Client(id, 0, addr, so);
+        this.my_clients.put(id, c);
+        this.next_client_ID++;
+        this.lock.unlock();
+
+        return c;
+    }
+
+    public Client getClient(int id){
+        return this.my_clients.get(id);
     }
 
     public String toString(){
@@ -60,64 +83,15 @@ public class AnonGW {
         }
         else{
             sb.append("\n");
-            for(String str : this.nodes){
-                sb.append("    ").append(str).append("\n");
+            for(InetAddress str : this.nodes){
+                sb.append("    ").append(str.toString()).append("\n");
             }
         }
 
         return sb.toString();
     }
 
-    public void send(OutputStream out, byte[] buff) throws IOException {
-        System.out.println("Enviar Mensagem\n");
-        out.write(buff);
-        out.flush();
-        System.out.println("Mensagem Enviada\n");
-    }
-
-    /**
-     *
-     * @param in InputStream onde os bytes seram lidos
-     * @param flag Determina se é para receber do Cliente ou do Servidor
-     *
-     * @return Retorna os bytes lidos
-     */
-    public byte[] read(InputStream in, int flag) throws IOException {
-        System.out.println("Receber Mensagem\n");
-
-        int inCount = 0;
-        int msgSize = 0;
-        List<byte[]> buffOfBuffs = new ArrayList<>();
-        byte[] buff = new byte[4096];
-
-        while((inCount = in.read(buff)) > 0){
-            msgSize += inCount;
-            buffOfBuffs.add(buff);
-            buff = new byte[4096];
-
-            if(flag == 0 && inCount < 4096){
-                break;
-            }
-        }
-
-        byte[] res = new byte[msgSize];
-        int index = 0;
-        for(byte[] arr: buffOfBuffs){
-            for(byte b : arr){
-                if(index >= msgSize){
-                    break;
-                }
-                else{
-                    res[index++] = b;
-                }
-            }
-        }
-
-        System.out.println("Mensagem Recebida\n");
-        return res;
-    }
-
-    private static boolean init_configure(String[] args, AnonGW me){
+    private static boolean init_configure(String[] args, AnonGW me) throws UnknownHostException {
         boolean error = false;
         boolean checkTargetServer = false;
         boolean checkPort = false;
@@ -168,7 +142,7 @@ public class AnonGW {
                         }
                         else{
                             if(currentParams == 3){
-                                me.addNodes(arg);
+                                me.addNodes(InetAddress.getByName(arg));
                             }
                             else{
                                 error = true;
@@ -202,19 +176,22 @@ public class AnonGW {
     public static void main(String[] args) {
         AnonGW me = new AnonGW();
 
-        if(!init_configure(args, me)){
+        try{
+            if(!init_configure(args, me)){
+                return;
+            }
+        }
+        catch(UnknownHostException e){
+            e.printStackTrace();
             return;
         }
 
         System.out.println(me.toString());
 
-        new Thread(new TCP(me)).start();
+        // UDP
+        new Thread(new UDP(me)).start();
 
-        try{
-            new Thread(new UDP(me)).start();
-        }
-        catch(SocketException e){
-            e.printStackTrace();
-        }
+        // TCP
+        new Thread(new TCP(me)).start();
     }
 }
