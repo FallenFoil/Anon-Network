@@ -1,9 +1,7 @@
 package blocking;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -26,7 +24,8 @@ public class UDP_Client implements Runnable{
 
             try {
                 TCP.send(so.getOutputStream(), p.getData());
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 e.printStackTrace();
             }
         }

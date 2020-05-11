@@ -27,8 +27,8 @@ public class UDP_Packet{
         this.response = wrapped.getInt();
         int packet_size = wrapped.getInt();
 
-        if(packet_size > 8){
-            byte[] buff = new byte[packet_size - 12];
+        if(packet_size > 16){
+            byte[] buff = new byte[packet_size - 16];
 
             wrapped.get(data);
             this.data_size = data.length;
@@ -74,7 +74,7 @@ public class UDP_Packet{
     }
 
     public DatagramPacket toDatagramPacket(){
-        int packet_size = 4*3 + this.data_size;
+        int packet_size = 4*4 + this.data_size;
         ByteBuffer b = ByteBuffer.allocate(packet_size);
 
         b.putInt(this.sequence);
