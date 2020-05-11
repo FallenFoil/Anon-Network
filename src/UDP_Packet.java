@@ -1,5 +1,3 @@
-package blocking;
-
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -25,13 +23,12 @@ public class UDP_Packet{
         this.sequence = wrapped.getInt();
         this.client_id = wrapped.getInt();
         this.response = wrapped.getInt();
-        int packet_size = wrapped.getInt();
+        this.data_size = wrapped.getInt();
 
-        if(packet_size > 16){
-            byte[] buff = new byte[packet_size - 16];
+        if(this.data_size > 0){
+            this.data = new byte[this.data_size];
 
-            wrapped.get(data);
-            this.data_size = data.length;
+            wrapped.get(this.data);
         }
     }
 
@@ -80,7 +77,7 @@ public class UDP_Packet{
         b.putInt(this.sequence);
         b.putInt(this.client_id);
         b.putInt(this.response);
-        b.putInt(packet_size);
+        b.putInt(this.data_size);
 
         if(this.data_size > 0){
             b.put(this.data);

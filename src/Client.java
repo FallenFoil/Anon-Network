@@ -1,5 +1,3 @@
-package blocking;
-
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -22,10 +20,6 @@ public class Client {
 
     public int getNext_sequence() {
         return next_sequence;
-    }
-
-    public InetAddress getAddress() {
-        return address;
     }
 
     public Socket getSocket() {

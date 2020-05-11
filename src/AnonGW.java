@@ -1,5 +1,3 @@
-package blocking;
-
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
