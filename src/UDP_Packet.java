@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 public class UDP_Packet{
     private int sequence;
     private int response;
+    private int fragment;
+    private int total_fragments;
 
     private InetAddress address;
     private int port;
@@ -23,6 +25,8 @@ public class UDP_Packet{
         this.sequence = wrapped.getInt();
         this.client_id = wrapped.getInt();
         this.response = wrapped.getInt();
+        this.fragment = wrapped.getInt();
+        this.total_fragments = wrapped.getInt();
         this.data_size = wrapped.getInt();
 
         if(this.data_size > 0){
@@ -32,21 +36,24 @@ public class UDP_Packet{
         }
     }
 
-    public UDP_Packet(int sequence, InetAddress addr, int port, int client_id, byte[] data, boolean response){
+    public UDP_Packet(int sequence, boolean response, int fragment, int total_fragments, InetAddress addr, int port, int client_id, byte[] data){
         this.sequence = sequence;
-        this.address = addr;
-        this.port = port;
-        this.client_id = client_id;
-
-        this.data = data;
-        this.data_size = data.length;
-
         if(response){
             this.response = 1;
         }
         else{
             this.response = 0;
         }
+        this.fragment = fragment;
+        this.total_fragments = total_fragments;
+
+        this.address = addr;
+        this.port = port;
+
+        this.client_id = client_id;
+
+        this.data = data;
+        this.data_size = data.length;
     }
 
     public boolean isResponse(){
@@ -71,12 +78,14 @@ public class UDP_Packet{
     }
 
     public DatagramPacket toDatagramPacket(){
-        int packet_size = 4*4 + this.data_size;
+        int packet_size = 4*6 + this.data_size;
         ByteBuffer b = ByteBuffer.allocate(packet_size);
 
         b.putInt(this.sequence);
         b.putInt(this.client_id);
         b.putInt(this.response);
+        b.putInt(this.fragment);
+        b.putInt(this.total_fragments);
         b.putInt(this.data_size);
 
         if(this.data_size > 0){

@@ -6,6 +6,7 @@ import java.net.SocketException;
 public class UDP implements Runnable{
     private AnonGW anon;
     private DatagramSocket socket;
+    public static final int Packet_Size = 4096;
 
     public UDP(AnonGW a){
         this.anon = a;
@@ -27,7 +28,7 @@ public class UDP implements Runnable{
     @Override
     public void run() {
         while (true) {
-            byte[] buff = new byte[4096];
+            byte[] buff = new byte[UDP.Packet_Size];
             DatagramPacket packet = new DatagramPacket(buff, buff.length);
 
             try {

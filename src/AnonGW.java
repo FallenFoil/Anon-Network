@@ -7,23 +7,22 @@ public class AnonGW {
     private List<InetAddress> nodes;
     private String targetServer;
     private int port;
+
+    private Lock rand_lock;
     private Random rand;
 
     private Map<Integer, Client> my_clients;
-
     private int next_client_ID;
-
-    private Lock lock;
+    private Lock clients_lock;
 
     public AnonGW(){
         this.nodes = new ArrayList<>();
         this.rand = new Random();
+        this.rand_lock = new ReentrantLock();
 
         this.my_clients = new HashMap<>();
-
         this.next_client_ID = 0;
-
-        this.lock = new ReentrantLock();
+        this.clients_lock = new ReentrantLock();
     }
 
     public void addNodes(InetAddress node){
@@ -47,24 +46,30 @@ public class AnonGW {
     }
 
     public InetAddress getRandomNode(){
+        this.rand_lock.lock();
         int index = this.rand.nextInt(this.nodes.size());
+        this.rand_lock.unlock();
 
         return this.nodes.get(index);
     }
 
     public Client createNewClient(InetAddress addr, Socket so){
-        this.lock.lock();
+        this.clients_lock.lock();
         int id = this.next_client_ID;
-        Client c = new Client(id, 0, addr, so);
+        Client c = new Client(id, 1, addr, so);
         this.my_clients.put(id, c);
         this.next_client_ID++;
-        this.lock.unlock();
+        this.clients_lock.unlock();
 
         return c;
     }
 
     public Client getClient(int id){
         return this.my_clients.get(id);
+    }
+
+    public void cleanClient(int id){
+        this.my_clients.remove(id);
     }
 
     public String toString(){

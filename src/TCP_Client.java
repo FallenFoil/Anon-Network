@@ -15,15 +15,16 @@ public class TCP_Client implements Runnable{
     @Override
     public void run() {
         try{
+            this.client.setSoTimeout(5000);
             InputStream client_in = this.client.getInputStream();
 
-            byte[] buff = TCP.read(client_in, 0);
+            byte[] buff = TCP.read(client_in);
 
             InetAddress client_address = this.client.getInetAddress();
 
             Client c = this.anon.createNewClient(client_address, this.client);
 
-            UDP_Packet packet = new UDP_Packet(c.getNext_sequence(), this.anon.getRandomNode(), 6666, c.getId(), buff, false);
+            UDP_Packet packet = new UDP_Packet(c.getNext_sequence(), false, 0, 1, this.anon.getRandomNode(), 6666, c.getId(), buff);
 
             UDP.send(packet);
         }

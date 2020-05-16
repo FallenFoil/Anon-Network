@@ -2,6 +2,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,11 +24,10 @@ public class TCP implements Runnable{
     /**
      *
      * @param in InputStream onde os bytes seram lidos
-     * @param flag Determina se é para receber do Cliente (0) ou do Servidor (1)
      *
      * @return Retorna os bytes lidos
      */
-    public static byte[] read(InputStream in, int flag) throws IOException {
+    public static byte[] read(InputStream in) throws IOException {
         System.out.println("Receber Mensagem\n");
 
         int inCount = 0;
@@ -34,14 +35,20 @@ public class TCP implements Runnable{
         List<byte[]> buffOfBuffs = new ArrayList<>();
         byte[] buff = new byte[4096];
 
-        while((inCount = in.read(buff)) > 0){
-            msgSize += inCount;
-            buffOfBuffs.add(buff);
-            buff = new byte[4096];
+        try {
+            while(true) {
+                inCount = in.read(buff);
+                if(inCount == -1){
+                    break;
+                }
 
-            if(flag == 0 && inCount < 4096){
-                break;
+                msgSize += inCount;
+                buffOfBuffs.add(buff);
+                buff = new byte[4096];
             }
+        }
+        catch(SocketTimeoutException e){
+
         }
 
         byte[] res = new byte[msgSize];
