@@ -17,7 +17,7 @@ public class TCP_Client implements Runnable{
     ArrayList<byte[]> buffer = new ArrayList<>();
     boolean sending = false;
     boolean toSend = false;
-
+    boolean reading = true;
 
 
     public TCP_Client(AnonGW a, Socket so){
@@ -63,9 +63,10 @@ public class TCP_Client implements Runnable{
 
                     while(sending) condition.await();
                     lock.lock();
-
+                    reading = true;
                     buffer.add(buff);
                     toSend = true;
+                    reading = false;
                     condition.signal();
 
                     lock.unlock();
@@ -79,7 +80,7 @@ public class TCP_Client implements Runnable{
         //ENVIAR
         new Thread(()->{
             try{
-                while(!toSend) condition.await();
+                while(!toSend || !reading) condition.await();
                 lock.lock();
                 sending = true;
                 byte[] send = buffer.get(1);
@@ -90,6 +91,7 @@ public class TCP_Client implements Runnable{
                 UDP.send(packet);
                 if(buffer.size()==0) toSend = false;
                 sending = false;
+                condition.signal();
                 lock.unlock();
             }catch (Exception e){
 
