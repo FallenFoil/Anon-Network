@@ -38,11 +38,14 @@ public class TCP implements Runnable{
         try {
             while(true) {
                 inCount = in.read(buff);
+
                 if(inCount == -1){
                     break;
                 }
 
                 msgSize += inCount;
+
+
                 buffOfBuffs.add(buff);
                 buff = new byte[4096];
             }
@@ -82,3 +85,5 @@ public class TCP implements Runnable{
         }
     }
 }
+
+
