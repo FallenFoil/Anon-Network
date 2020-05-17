@@ -41,6 +41,8 @@ public class UDP_Client implements Runnable{
 
                 TCP.send(target.getOutputStream(), p.getData());
 
+                target.setSoTimeout(0);
+
                 byte[] response = TCP.read(target.getInputStream());
 
                 target.close();
