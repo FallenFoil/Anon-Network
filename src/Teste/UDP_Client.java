@@ -1,8 +1,10 @@
 package Teste;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class UDP_Client implements Runnable{
     private AnonGW anon;
@@ -29,7 +31,18 @@ public class UDP_Client implements Runnable{
                 if(this.packet.getFragment() == last_packet + 1){
                     while(this.packet != null && this.packet.getFragment() == last_packet + 1){
                         if(!this.target.isClosed()){
-                            TCP.send(this.target.getOutputStream(), this.packet.getData());
+                            //TCP.send(this.target.getOutputStream(), this.packet.getData());
+                            OutputStream out = this.target.getOutputStream();
+                            byte[] buff = this.packet.getData();
+                            try{
+                                System.out.println("Enviar Mensagem\n");
+                                out.write(buff);
+                                out.flush();
+                                System.out.println("Mensagem Enviada\n");
+                            }
+                            catch(SocketException e){
+                                System.out.println("Cant send to socket");
+                            }
                         }
 
                         last_packet++;
@@ -49,7 +62,18 @@ public class UDP_Client implements Runnable{
                 if(this.packet.getFragment() == last_packet + 1){
                     while(this.packet != null && this.packet.getFragment() == last_packet + 1){
                         if(!this.target.isClosed()){
-                            TCP.send(this.target.getOutputStream(), this.packet.getData());
+                            //TCP.send(this.target.getOutputStream(), this.packet.getData());
+                            OutputStream out = this.target.getOutputStream();
+                            byte[] buff = this.packet.getData();
+                            try{
+                                System.out.println("Enviar Mensagem\n");
+                                out.write(buff);
+                                out.flush();
+                                System.out.println("Mensagem Enviada\n");
+                            }
+                            catch(SocketException e){
+                                System.out.println("Cant send to socket");
+                            }
                         }
 
                         last_packet++;
