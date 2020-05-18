@@ -22,7 +22,6 @@ public class TCP_Client implements Runnable{
             Client c = this.anon.createNewClient(client_address, this.client);
 
             InputStream in = this.client.getInputStream();
-
             InetAddress node = this.anon.getRandomNode();
 
             int fragment = 0;

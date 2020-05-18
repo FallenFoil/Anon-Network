@@ -103,10 +103,15 @@ public class AnonGW {
 
     public Client createNewClient(InetAddress addr, Socket so){
         this.clients_lock.lock();
+
         int id = this.next_client_ID;
         Client c = new Client(id, 0, addr, so);
         this.my_clients.put(id, c);
+        this.my_clients_last_packet.put(id, -1);
+        List<UDP_Packet> list = new ArrayList<>();
+        this.my_clients_packets_queue.put(id,list);
         this.next_client_ID++;
+
         this.clients_lock.unlock();
 
         return c;

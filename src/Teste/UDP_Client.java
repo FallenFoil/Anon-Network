@@ -1,7 +1,5 @@
 package Teste;
 
-import javafx.scene.effect.InnerShadow;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
