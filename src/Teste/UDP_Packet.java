@@ -1,5 +1,3 @@
-package Teste;
-
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
