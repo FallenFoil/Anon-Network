@@ -27,7 +27,7 @@ public class UDP_Client implements Runnable{
                 last_packet = this.anon.last_packet_sent.get(from).get(client_id);
 
                 if(this.packet.getFragment() == last_packet + 1){
-                    while(this.packet.getFragment() == last_packet + 1 && this.packet != null){
+                    while(this.packet != null && this.packet.getFragment() == last_packet + 1){
                         if(!this.target.isClosed()){
                             TCP.send(this.target.getOutputStream(), this.packet.getData());
                         }
@@ -47,7 +47,7 @@ public class UDP_Client implements Runnable{
                 last_packet = this.anon.my_clients_last_packet.get(client_id);
 
                 if(this.packet.getFragment() == last_packet + 1){
-                    while(this.packet.getFragment() == last_packet + 1 && this.packet != null){
+                    while(this.packet != null && this.packet.getFragment() == last_packet + 1){
                         if(!this.target.isClosed()){
                             TCP.send(this.target.getOutputStream(), this.packet.getData());
                         }
