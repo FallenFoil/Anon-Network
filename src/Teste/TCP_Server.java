@@ -1,3 +1,5 @@
+package Teste;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -24,11 +26,11 @@ public class TCP_Server implements Runnable{
             int fragment = 0;
 
             while (true){
-                byte[] buffer = new byte[8176];
+                byte[] buffer = new byte[8192 - UDP_Packet.n_bytes];
 
                 int bytesRead = in.read(buffer);
 
-		System.out.println(new String(buffer));
+		        System.out.println(new String(buffer));
 
                 UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buffer);
                 fragment++;
@@ -38,13 +40,14 @@ public class TCP_Server implements Runnable{
                     break;
             }
 
-            this.anon.targetSockets.get(this.client_ID).close();
-
-            this.anon.last_packet_sent.remove(this.client_ID);
-            this.anon.targetSockets.remove(this.client_ID);
-            this.anon.packets_in_queue.remove(this.client_ID);
+            this.anon.targetSockets.get(this.node).get(this.client_ID).close();
         } catch (IOException e) {
             // Read/write failed --> connection is broken --> exit the thread
+        }
+        finally {
+            this.anon.last_packet_sent.remove(this.node);
+            this.anon.targetSockets.remove(this.node);
+            this.anon.packets_in_queue.remove(this.node);
         }
     }
 }

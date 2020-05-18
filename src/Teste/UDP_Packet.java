@@ -1,13 +1,18 @@
+package Teste;
+
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
 public class UDP_Packet{
+    public static final int n_bytes = 4*4;
     private int response;
     private int fragment;
 
-    private InetAddress address;
+    private InetAddress from_address;
+    private InetAddress to_address;
     private int port;
+
 
     private int client_id;
 
@@ -15,7 +20,7 @@ public class UDP_Packet{
     private int data_size;
 
     public UDP_Packet(DatagramPacket packet){
-        this.address = packet.getAddress();
+        this.to_address = packet.getAddress();
         this.port = packet.getPort();
 
         ByteBuffer wrapped = ByteBuffer.wrap(packet.getData());
@@ -32,6 +37,24 @@ public class UDP_Packet{
         }
     }
 
+    public DatagramPacket toDatagramPacket(){
+        int packet_size = UDP_Packet.n_bytes + this.data_size;
+        ByteBuffer b = ByteBuffer.allocate(packet_size);
+
+        b.putInt(this.client_id);
+        b.putInt(this.response);
+        b.putInt(this.fragment);
+        b.putInt(this.data_size);
+
+        if(this.data_size > 0){
+            b.put(this.data);
+        }
+
+        byte[] buff = b.array();
+
+        return new DatagramPacket(buff, buff.length, to_address, port);
+    }
+
     public UDP_Packet(boolean response, int fragment, InetAddress addr, int port, int client_id, byte[] data){
         if(response){
             this.response = 1;
@@ -41,7 +64,8 @@ public class UDP_Packet{
         }
         this.fragment = fragment;
 
-        this.address = addr;
+        this.from_address = null;
+        this.to_address = addr;
         this.port = port;
 
         this.client_id = client_id;
@@ -71,21 +95,11 @@ public class UDP_Packet{
         return this.fragment;
     }
 
-    public DatagramPacket toDatagramPacket(){
-        int packet_size = 4*4 + this.data_size;
-        ByteBuffer b = ByteBuffer.allocate(packet_size);
+    public InetAddress getFrom(){
+        return this.from_address;
+    }
 
-        b.putInt(this.client_id);
-        b.putInt(this.response);
-        b.putInt(this.fragment);
-        b.putInt(this.data_size);
-
-        if(this.data_size > 0){
-            b.put(this.data);
-        }
-
-        byte[] buff = b.array();
-
-        return new DatagramPacket(buff, buff.length, address, port);
+    public void setFrom_address(InetAddress from){
+        this.from_address = from;
     }
 }

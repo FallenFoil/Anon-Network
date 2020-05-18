@@ -1,9 +1,10 @@
+package Teste;
+
+import javafx.scene.effect.InnerShadow;
+
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
 
 public class UDP_Client implements Runnable{
     private AnonGW anon;
@@ -18,43 +19,52 @@ public class UDP_Client implements Runnable{
 
     @Override
     public void run() {
-	try {
-                if(this.anon.last_packet_sent.containsKey(this.packet.getClient_id())){
-                    int last_packet = this.anon.last_packet_sent.get(this.packet.getClient_id());
+	    try{
+	        int last_packet;
+            int client_id = this.packet.getClient_id();
 
-                    if(this.packet.getFragment() != last_packet + 1){
-                        this.anon.packets_in_queue.get(this.packet.getClient_id()).add(this.packet);
-                    }
-                    else{
-                        int id = this.packet.getClient_id();
-                        while(this.packet.getFragment() == last_packet + 1 && this.packet != null){
-                            if(!this.target.isClosed()){
-				    TCP.send(this.target.getOutputStream(), this.packet.getData());
-			    }
-                            last_packet++;
+            if(!this.packet.isResponse()){
+                InetAddress from = this.packet.getFrom();
 
-                            this.anon.packets_in_queue.get(this.packet.getClient_id()).remove(this.packet);
+                last_packet = this.anon.last_packet_sent.get(from).get(client_id);
 
-                            this.packet = this.anon.getSmallestFragment(this.packet.getClient_id());
+                if(this.packet.getFragment() == last_packet + 1){
+                    while(this.packet.getFragment() == last_packet + 1 && this.packet != null){
+                        if(!this.target.isClosed()){
+                            TCP.send(this.target.getOutputStream(), this.packet.getData());
                         }
 
-                        this.anon.last_packet_sent.put(id, last_packet);
+                        last_packet++;
+
+                        this.anon.packets_in_queue.get(from).get(client_id).remove(this.packet);
+
+                        this.packet = this.anon.getSmallestFragment(from, client_id);
                     }
                 }
                 else{
-                    if(this.packet.getFragment() == 0){
-			if(!this.target.isClosed()){
-                        	TCP.send(this.target.getOutputStream(), this.packet.getData());
-			}
-                        this.anon.last_packet_sent.put(this.packet.getClient_id(), 0);
-                    }
-                    else{
-                        this.anon.last_packet_sent.put(this.packet.getClient_id(), -1);
-                        List<UDP_Packet> list = new ArrayList<>();
-                        list.add(this.packet);
-                        this.anon.packets_in_queue.put(this.packet.getClient_id(), list);
+                    this.anon.packets_in_queue.get(from).get(client_id).add(this.packet);
+                }
+            }
+            else{
+                last_packet = this.anon.my_clients_last_packet.get(client_id);
+
+                if(this.packet.getFragment() == last_packet + 1){
+                    while(this.packet.getFragment() == last_packet + 1 && this.packet != null){
+                        if(!this.target.isClosed()){
+                            TCP.send(this.target.getOutputStream(), this.packet.getData());
+                        }
+
+                        last_packet++;
+
+                        this.anon.my_clients_packets_queue.get(client_id).remove(this.packet);
+
+                        this.packet = this.anon.getSmallestFragment(null, client_id);
                     }
                 }
+                else{
+                    this.anon.my_clients_packets_queue.get(client_id).add(this.packet);
+                }
+            }
         }
         catch (IOException e) {
             e.printStackTrace();

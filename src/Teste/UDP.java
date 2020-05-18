@@ -1,8 +1,11 @@
+package Teste;
+
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class UDP implements Runnable{
     private AnonGW anon;
@@ -39,20 +42,48 @@ public class UDP implements Runnable{
 
                 Socket so = null;
 
+                InetAddress addr = packet.getAddress();
+                int client_id = p.getClient_id();
+
+                p.setFrom_address(addr);
+
                 if(!p.isResponse()){
-                    if(this.anon.targetSockets.containsKey(p.getClient_id())){
-                        so = this.anon.targetSockets.get(p.getClient_id());
+                    this.anon.nodes_lock.lock();
+                    if(this.anon.targetSockets.containsKey(addr)){
+                        so = this.anon.targetSockets.get(addr).get(client_id);
+                        this.anon.nodes_lock.unlock();
                     }
                     else{
+                        this.anon.nodes_lock.unlock();
                         so = new Socket(this.anon.getTargetServer(), this.anon.getPort());
-                        this.anon.targetSockets.put(p.getClient_id(), so);
 
-                        new Thread(new TCP_Server(this.anon, so, packet.getAddress(), p.getClient_id())).start();
+                        Map<Integer, Socket> map1 = new HashMap<>();
+                        map1.put(client_id, so);
+                        this.anon.nodes_lock.lock();
+                        this.anon.targetSockets.put(addr, map1);
+                        this.anon.nodes_lock.unlock();
+
+                        Map<Integer, Integer> map2 = new HashMap<>();
+                        map2.put(client_id, -1);
+                        this.anon.nodes_lock.lock();
+                        this.anon.last_packet_sent.put(addr, map2);
+                        this.anon.nodes_lock.unlock();
+
+                        Map<Integer, List<UDP_Packet>> map3 = new HashMap<>();
+                        List<UDP_Packet> list = new ArrayList<>();
+                        map3.put(client_id, list);
+                        this.anon.nodes_lock.lock();
+                        this.anon.packets_in_queue.put(addr, map3);
+                        this.anon.nodes_lock.unlock();
+
+                        new Thread(new TCP_Server(this.anon, so, addr, client_id)).start();
                     }
                 }
-		else{
-			so = this.anon.getClient(p.getClient_id()).getSocket();
-		}
+                else{
+                    this.anon.nodes_lock.lock();
+                    so = this.anon.getClient(client_id).getSocket();
+                    this.anon.nodes_lock.unlock();
+                }
 
                 new Thread(new UDP_Client(this.anon, p, so)).start();
             }

@@ -1,3 +1,5 @@
+package Teste;
+
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -13,15 +15,16 @@ public class AnonGW {
     private Lock rand_lock;
     private Random rand;
 
-    private Map<Integer, Client> my_clients;
-    private int next_client_ID;
-    private Lock clients_lock;
+    public Map<Integer, Client> my_clients;
+    public Map<Integer, Integer> my_clients_last_packet;
+    public Map<Integer, List<UDP_Packet>> my_clients_packets_queue;
+    public int next_client_ID;
+    public Lock clients_lock;
 
-    public Map<Integer, Integer> last_packet_sent;
-    public Map<Integer, List<UDP_Packet>> packets_in_queue;
-    public Map<Integer, Socket> targetSockets;
-
-    //public Map<Integer, Map<Integer, Integer>> nodes_clients
+    public Map<InetAddress, Map<Integer, Integer>> last_packet_sent; // <Node,  <Client_ID, Last_Packet>>
+    public Map<InetAddress, Map<Integer, List<UDP_Packet>>> packets_in_queue; // <Node,  <Client_ID, UDP_Packets>>
+    public Map<InetAddress, Map<Integer, Socket>> targetSockets; // <Node, <Client_ID, Server_Socket>>
+    public Lock nodes_lock;
 
     public AnonGW(){
         this.nodes = new ArrayList<>();
@@ -29,12 +32,15 @@ public class AnonGW {
         this.rand_lock = new ReentrantLock();
 
         this.my_clients = new HashMap<>();
+        this.my_clients_last_packet = new HashMap<>();
+        this.my_clients_packets_queue = new HashMap<>();
         this.next_client_ID = 0;
         this.clients_lock = new ReentrantLock();
 
         this.last_packet_sent = new HashMap<>();
         this.packets_in_queue = new HashMap<>();
         this.targetSockets = new HashMap<>();
+        this.nodes_lock = new ReentrantLock();
     }
 
     public void addNodes(InetAddress node){
@@ -57,8 +63,15 @@ public class AnonGW {
         this.port = port;
     }
 
-    public UDP_Packet getSmallestFragment(int client_ID){
-        List<UDP_Packet> list = this.packets_in_queue.get(client_ID);
+    public UDP_Packet getSmallestFragment(InetAddress addr, int client_id){
+        List<UDP_Packet> list;
+
+        if(addr == null){
+            list = this.my_clients_packets_queue.get(client_id);
+        }
+        else{
+            list = this.packets_in_queue.get(addr).get(client_id);
+        }
 
         UDP_Packet smallest = null;
 
@@ -101,6 +114,8 @@ public class AnonGW {
 
     public void cleanClient(int id){
         this.my_clients.remove(id);
+        this.my_clients_last_packet.remove(id);
+        this.my_clients_packets_queue.remove(id);
     }
 
     public String toString(){

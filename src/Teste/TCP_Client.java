@@ -1,3 +1,5 @@
+package Teste;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -26,7 +28,7 @@ public class TCP_Client implements Runnable{
             int fragment = 0;
 
             while (true) {
-                byte[] buffer = new byte[8176];
+                byte[] buffer = new byte[8192 - UDP_Packet.n_bytes];
 
                 int bytesRead = in.read(buffer);
 
