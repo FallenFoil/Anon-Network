@@ -67,10 +67,14 @@ public class AnonGW {
         List<UDP_Packet> list;
 
         if(addr == null){
+            this.clients_lock.lock();
             list = this.my_clients_packets_queue.get(client_id);
+            this.clients_lock.unlock();
         }
         else{
+            this.nodes_lock.lock();
             list = this.packets_in_queue.get(addr).get(client_id);
+            this.nodes_lock.unlock();
         }
 
         UDP_Packet smallest = null;
@@ -109,13 +113,19 @@ public class AnonGW {
     }
 
     public Client getClient(int id){
-        return this.my_clients.get(id);
+        this.clients_lock.lock();
+        Client c = this.my_clients.get(id);
+        this.clients_lock.unlock();
+
+        return c;
     }
 
     public void cleanClient(int id){
+        this.clients_lock.lock();
         this.my_clients.remove(id);
         this.my_clients_last_packet.remove(id);
         this.my_clients_packets_queue.remove(id);
+        this.clients_lock.unlock();
     }
 
     public String toString(){
