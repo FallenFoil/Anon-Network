@@ -23,6 +23,8 @@ public class AnonGW {
     public Map<Integer, List<UDP_Packet>> packets_in_queue;
     public Map<Integer, Socket> targetSockets;
 
+    //public Map<Integer, Map<Integer, Integer>> nodes_clients
+
     public AnonGW(){
         this.nodes = new ArrayList<>();
         this.rand = new Random();

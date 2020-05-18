@@ -20,14 +20,14 @@ public class TCP_Server implements Runnable{
 
     @Override
     public void run() {
-        byte[] buffer = new byte[8192];
-
         try {
             InputStream in = this.server.getInputStream();
 
             int fragment = 0;
 
-            while (true) {
+            while (true){
+                byte[] buffer = new byte[8192];
+
                 int bytesRead = in.read(buffer);
 
                 UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buffer);

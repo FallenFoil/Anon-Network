@@ -2,7 +2,6 @@ package Teste;
 
 import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
 public class UDP_Packet{
@@ -17,8 +16,6 @@ public class UDP_Packet{
     private byte[] data;
     private int data_size;
 
-    private InetAddress father_node;
-
     public UDP_Packet(DatagramPacket packet){
         this.address = packet.getAddress();
         this.port = packet.getPort();
@@ -29,12 +26,6 @@ public class UDP_Packet{
         this.response = wrapped.getInt();
         this.fragment = wrapped.getInt();
         this.data_size = wrapped.getInt();
-        try{
-            this.father_node = InetAddress.getByName(Long.toString(wrapped.getLong()));
-        }
-        catch(UnknownHostException e){
-            e.printStackTrace();
-        }
 
         if(this.data_size > 0){
             this.data = new byte[this.data_size];
@@ -90,7 +81,6 @@ public class UDP_Packet{
         b.putInt(this.response);
         b.putInt(this.fragment);
         b.putInt(this.data_size);
-        b.put(this.father_node.getAddress());
 
         if(this.data_size > 0){
             b.put(this.data);
