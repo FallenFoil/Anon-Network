@@ -26,7 +26,7 @@ public class TCP_Server implements Runnable{
             int fragment = 0;
 
             while (true){
-                byte[] buffer = new byte[8192];
+                byte[] buffer = new byte[8176];
 
                 int bytesRead = in.read(buffer);
 

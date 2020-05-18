@@ -28,12 +28,13 @@ public class TCP_Client implements Runnable{
             int fragment = 0;
 
             while (true) {
-                byte[] buffer = new byte[8192];
+                byte[] buffer = new byte[8176];
 
                 int bytesRead = in.read(buffer);
 
                 UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, c.getId(), buffer);
                 fragment++;
+
                 UDP.send(packet);
 
                 if (bytesRead == -1)

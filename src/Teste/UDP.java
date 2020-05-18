@@ -25,6 +25,7 @@ public class UDP implements Runnable{
     public static void send(UDP_Packet udp_response) throws IOException {
         DatagramSocket socket = new DatagramSocket();
         socket.send(udp_response.toDatagramPacket());
+        System.out.println(udp_response.toDatagramPacket().getData().length);
         socket.close();
     }
 
@@ -36,6 +37,8 @@ public class UDP implements Runnable{
 
             try {
                 socket.receive(packet);
+
+                System.out.println(packet.getData().length);
 
                 UDP_Packet p = new UDP_Packet(packet);
 
