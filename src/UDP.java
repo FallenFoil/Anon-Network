@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,9 +22,9 @@ public class UDP implements Runnable{
         }
     }
 
-    public static void send(UDP_Packet udp_response) throws IOException {
+    public static void send(UDP_Packet packet) throws IOException {
         DatagramSocket socket = new DatagramSocket();
-        socket.send(udp_response.toDatagramPacket());
+        socket.send(packet.toDatagramPacket());
         socket.close();
     }
 
@@ -38,6 +39,10 @@ public class UDP implements Runnable{
 
                 UDP_Packet p = new UDP_Packet(packet);
 
+                if(p.getData_size() == 0){
+                    break;
+                }
+
                 Socket so = null;
 
                 InetAddress addr = packet.getAddress();
@@ -46,13 +51,38 @@ public class UDP implements Runnable{
                 p.setFrom_address(addr);
 
                 if(!p.isResponse()){
-                    this.anon.nodes_lock.lock();
-                    if(this.anon.targetSockets.containsKey(addr)){
-                        so = this.anon.targetSockets.get(addr).get(client_id);
-                        this.anon.nodes_lock.unlock();
+                    if(this.anon.containsTargetSocket(addr, client_id)){
+                        so = this.anon.getTargetSocket(addr, client_id);
+                        if(p.getFragment() == this.anon.getLastPacket(addr, client_id) + 1){
+                            OutputStream out = so.getOutputStream();
+                            try{
+                                System.out.println("Enviar Mensagem\n");
+                                out.write(p.getData());
+                                out.flush();
+                                System.out.println("Mensagem Enviada\n");
+                            }
+                            catch(SocketException e){
+                                System.out.println("Cant send to socket");
+                            }
+                            this.anon.setLastPacket(addr, client_id, p.getFragment());
+                            while((p = this.anon.proximoEnviar(addr,client_id)) != null){
+                                try{
+                                    System.out.println("Enviar Mensagem\n");
+                                    out.write(p.getData());
+                                    out.flush();
+                                    System.out.println("Mensagem Enviada\n");
+                                }
+                                catch(SocketException e){
+                                    System.out.println("Cant send to socket");
+                                }
+                                this.anon.setLastPacket(addr, client_id, p.getFragment());
+                            }
+                        }
+                        else{
+                            this.anon.add2Queue(addr, client_id, p);
+                        }
                     }
                     else{
-                        this.anon.nodes_lock.unlock();
                         so = new Socket(this.anon.getTargetServer(), this.anon.getPort());
 
                         Map<Integer, Socket> map1 = new HashMap<>();
@@ -60,29 +90,75 @@ public class UDP implements Runnable{
 
 
                         Map<Integer, Integer> map2 = new HashMap<>();
-                        map2.put(client_id, -1);
 
                         Map<Integer, List<UDP_Packet>> map3 = new HashMap<>();
                         List<UDP_Packet> list = new ArrayList<>();
+
+                        if(p.getFragment() == 0){
+                            OutputStream out = so.getOutputStream();
+                            try{
+                                System.out.println("Enviar Mensagem\n");
+                                out.write(p.getData());
+                                out.flush();
+                                System.out.println("Mensagem Enviada\n");
+                            }
+                            catch(SocketException e){
+                                System.out.println("Cant send to socket");
+                            }
+                            map2.put(client_id, 0);
+                        }
+                        else{
+                            list.add(p);
+                            map2.put(client_id, -1);
+                        }
                         map3.put(client_id, list);
 
-
-                        this.anon.nodes_lock.lock();
-                        this.anon.targetSockets.put(addr, map1);
-                        this.anon.last_packet_sent.put(addr, map2);
-                        this.anon.packets_in_queue.put(addr, map3);
-                        this.anon.nodes_lock.unlock();
+                        this.anon.putTargetSocket(addr, map1);
+                        this.anon.putLastPacket(addr, map2);
+                        this.anon.putQueue(addr, map3);
 
                         new Thread(new TCP_Server(this.anon, so, addr, client_id)).start();
                     }
                 }
                 else{
-                    this.anon.nodes_lock.lock();
-                    so = this.anon.getClient(client_id).getSocket();
-                    this.anon.nodes_lock.unlock();
-                }
+                    if(p.getData().length == 6){
+                        if(new String(p.getData()).equals("fechou")) {
+                            this.anon.cleanClient(p.getClient_id());
+                        }
+                    }
+                    else {
+                        so = this.anon.getClientSocket(client_id);
 
-                new Thread(new UDP_Client(this.anon, p, so)).start();
+                        int last_packet = this.anon.getMyClient_LastPacket(client_id);
+                        if (p.getFragment() == last_packet + 1) {
+                            OutputStream out = so.getOutputStream();
+                            try {
+                                System.out.println("Enviar Mensagem\n");
+                                out.write(p.getData());
+                                out.flush();
+                                System.out.println("Mensagem Enviada\n");
+                            } catch (SocketException e) {
+                                this.anon.cleanClient(client_id);
+                                System.out.println("Cant send to socket");
+                            }
+                            this.anon.setMyClient_LastPacket(client_id, p.getFragment());
+                            while ((p = this.anon.proximoEnviar(null, client_id)) != null) {
+                                try {
+                                    System.out.println("Enviar Mensagem\n");
+                                    out.write(p.getData());
+                                    out.flush();
+                                    System.out.println("Mensagem Enviada\n");
+                                } catch (SocketException e) {
+                                    this.anon.cleanClient(client_id);
+                                    System.out.println("Cant send to socket");
+                                }
+                                this.anon.setMyClient_LastPacket(client_id, p.getFragment());
+                            }
+                        } else {
+                            this.anon.add2MyClient_Queue(client_id, p);
+                        }
+                    }
+                }
             }
             catch (IOException e){
                 e.printStackTrace();

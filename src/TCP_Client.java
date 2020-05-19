@@ -1,57 +1,52 @@
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
 
 public class TCP_Client implements Runnable{
     private AnonGW anon;
-    private Socket client;
+    private Socket client_socket;
 
     public TCP_Client(AnonGW anon, Socket so){
         this.anon = anon;
-        this.client = so;
+        this.client_socket = so;
     }
 
     @Override
     public void run() {
-        InetAddress client_address = this.client.getInetAddress();
+        int client_ID = this.anon.createNewClient(this.client_socket);
+        InetAddress node = this.anon.getRandomNode();
 
-        Client c = this.anon.createNewClient(client_address, this.client);
-        int id = c.getId();
+        int fragment = 0;
+
         try {
-            InputStream in = this.client.getInputStream();
-            InetAddress node = this.anon.getRandomNode();
-
-            int fragment = 0;
+            InputStream in = this.client_socket.getInputStream();
 
             while (true) {
-                byte[] buffer = new byte[8192 - UDP_Packet.n_bytes];
+                byte[] buffer = new byte[UDP.Packet_Size - UDP_Packet.n_bytes];
 
                 int bytesRead = in.read(buffer);
 
+                if (bytesRead < 0) {
+                    break;
+                }
+
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
 
-                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, c.getId(), buff);
+                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, buff);
                 if(buff.length > 0){
                     fragment++;
                 }
 
-                //UDP.send(packet);
-                DatagramSocket socket = new DatagramSocket();
-                socket.send(packet.toDatagramPacket());
-                socket.close();
-
-                if (bytesRead == -1)
-                    this.anon.cleanClient(c.getId());
-                    break;
+                UDP.send(packet);
             }
         }
-        catch (IOException e) {
-            this.anon.my_clients.remove(id);
-            this.anon.my_clients_packets_queue.remove(id);
-            this.anon.my_clients_last_packet.remove(id);
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        finally{
+            this.anon.cleanClient(client_ID);
         }
     }
 }

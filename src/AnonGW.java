@@ -2,7 +2,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -13,22 +12,21 @@ public class AnonGW {
     private Lock rand_lock;
     private Random rand;
 
-    public Map<Integer, Client> my_clients;
-    public Map<Integer, Integer> my_clients_last_packet;
-    public Map<Integer, List<UDP_Packet>> my_clients_packets_queue;
+    public Map<Integer, Socket> my_clients;                                     // <Client_ID, Client>
+    public Map<Integer, Integer> my_clients_last_packet;                        // <Client_ID, Last_Packet>
+    public Map<Integer, List<UDP_Packet>> my_clients_packets_queue;             // <Client_ID, UDP_Packets>
     public int next_client_ID;
     public Lock clients_lock;
-    public Condition clients_con;
 
-    public Map<InetAddress, Map<Integer, Integer>> last_packet_sent; // <Node,  <Client_ID, Last_Packet>>
-    public Map<InetAddress, Map<Integer, List<UDP_Packet>>> packets_in_queue; // <Node,  <Client_ID, UDP_Packets>>
-    public Map<InetAddress, Map<Integer, Socket>> targetSockets; // <Node, <Client_ID, Server_Socket>>
+    public Map<InetAddress, Map<Integer, Integer>> last_packet_sent;            // <Node,  <Client_ID, Last_Packet>>
+    public Map<InetAddress, Map<Integer, List<UDP_Packet>>> packets_in_queue;   // <Node,  <Client_ID, UDP_Packets>>
+    public Map<InetAddress, Map<Integer, Socket>> targetSockets;                // <Node, <Client_ID, Server_Socket>>
     public Lock nodes_lock;
-    public Condition node_con;
 
     public UDP_Packet proximoEnviar(InetAddress addr, int client_ID){
         int last_packet;
         if(addr == null){
+            this.clients_lock.lock();
             last_packet = this.my_clients_last_packet.get(client_ID);
 
             for(UDP_Packet p : this.my_clients_packets_queue.get(client_ID)){
@@ -36,8 +34,10 @@ public class AnonGW {
                     return p;
                 }
             }
+            this.clients_lock.unlock();
         }
         else{
+            this.nodes_lock.lock();
             last_packet = this.last_packet_sent.get(addr).get(client_ID);
 
             for(UDP_Packet p : this.packets_in_queue.get(addr).get(client_ID)){
@@ -45,6 +45,7 @@ public class AnonGW {
                     return p;
                 }
             }
+            this.nodes_lock.unlock();
         }
 
         return null;
@@ -60,13 +61,11 @@ public class AnonGW {
         this.my_clients_packets_queue = new HashMap<>();
         this.next_client_ID = 0;
         this.clients_lock = new ReentrantLock();
-        this.clients_con = this.clients_lock.newCondition();
 
         this.last_packet_sent = new HashMap<>();
         this.packets_in_queue = new HashMap<>();
         this.targetSockets = new HashMap<>();
         this.nodes_lock = new ReentrantLock();
-        this.node_con = this.nodes_lock.newCondition();
     }
 
     public void addNodes(InetAddress node){
@@ -89,36 +88,6 @@ public class AnonGW {
         this.port = port;
     }
 
-    public UDP_Packet getSmallestFragment(InetAddress addr, int client_id){
-        List<UDP_Packet> list;
-
-        if(addr == null){
-            this.clients_lock.lock();
-            list = this.my_clients_packets_queue.get(client_id);
-            this.clients_lock.unlock();
-        }
-        else{
-            this.nodes_lock.lock();
-            list = this.packets_in_queue.get(addr).get(client_id);
-            this.nodes_lock.unlock();
-        }
-
-        UDP_Packet smallest = null;
-
-        for(UDP_Packet p : list){
-            if(smallest == null){
-                smallest = p;
-            }
-            else{
-                if(p.getFragment() < smallest.getFragment()){
-                    smallest = p;
-                }
-            }
-        }
-
-        return smallest;
-    }
-
     public InetAddress getRandomNode(){
         this.rand_lock.lock();
         int index = this.rand.nextInt(this.nodes.size());
@@ -127,36 +96,122 @@ public class AnonGW {
         return this.nodes.get(index);
     }
 
-    public Client createNewClient(InetAddress addr, Socket so){
+    public int createNewClient(Socket so){
         this.clients_lock.lock();
 
         int id = this.next_client_ID;
-        Client c = new Client(id, 0, addr, so);
-        this.my_clients.put(id, c);
+
+        this.my_clients.put(id, so);
         this.my_clients_last_packet.put(id, -1);
+
         List<UDP_Packet> list = new ArrayList<>();
         this.my_clients_packets_queue.put(id,list);
         this.next_client_ID++;
 
         this.clients_lock.unlock();
 
-        return c;
+        return id;
     }
 
-    public Client getClient(int id){
+    public Socket getClientSocket(int id){
         this.clients_lock.lock();
-        Client c = this.my_clients.get(id);
+        Socket c = this.my_clients.get(id);
         this.clients_lock.unlock();
 
         return c;
+    }
+
+    public boolean containsTargetSocket(InetAddress addr, int id){
+        this.nodes_lock.lock();
+        boolean res = this.targetSockets.containsKey(addr) && this.targetSockets.get(addr).containsKey(id);
+        this.nodes_lock.unlock();
+        return res;
+    }
+
+    public Socket getTargetSocket(InetAddress addr, int client_id){
+        this.nodes_lock.lock();
+        Socket res = this.targetSockets.get(addr).get(client_id);
+        this.nodes_lock.unlock();
+
+        return res;
+    }
+
+    public int getLastPacket(InetAddress addr, int client_id){
+        this.nodes_lock.lock();
+        int i = this.last_packet_sent.get(addr).get(client_id);
+        this.nodes_lock.unlock();
+
+        return i;
+    }
+
+    public void setLastPacket(InetAddress addr, int client_id, int fragment){
+        this.nodes_lock.lock();
+        this.last_packet_sent.get(addr).put(client_id, fragment);
+        this.nodes_lock.unlock();
+    }
+
+    public void add2Queue(InetAddress addr, int client_id, UDP_Packet packet){
+        this.nodes_lock.lock();
+        this.packets_in_queue.get(addr).get(client_id).add(packet);
+        this.nodes_lock.unlock();
+    }
+
+    public void putTargetSocket(InetAddress addr, Map<Integer, Socket> map1){
+        this.nodes_lock.lock();
+        this.targetSockets.put(addr, map1);
+        this.nodes_lock.unlock();
+    }
+
+    public void putLastPacket(InetAddress addr, Map<Integer, Integer> map2){
+        this.nodes_lock.lock();
+        this.last_packet_sent.put(addr, map2);
+        this.nodes_lock.unlock();
+    }
+
+    public void putQueue(InetAddress addr, Map<Integer, List<UDP_Packet>> map3){
+        this.nodes_lock.lock();
+        this.packets_in_queue.put(addr, map3);
+        this.nodes_lock.unlock();
+    }
+
+    public int getMyClient_LastPacket(int id){
+        this.clients_lock.lock();
+        int i = this.my_clients_last_packet.get(id);
+        this.clients_lock.unlock();
+
+        return i;
+    }
+
+    public void setMyClient_LastPacket(int id, int fragment){
+        this.clients_lock.lock();
+        this.my_clients_last_packet.put(id, fragment);
+        this.clients_lock.unlock();
+    }
+
+    public void add2MyClient_Queue(int client_id, UDP_Packet packet){
+        this.clients_lock.lock();
+        this.my_clients_packets_queue.get(client_id).add(packet);
+        this.clients_lock.unlock();
     }
 
     public void cleanClient(int id){
         this.clients_lock.lock();
+
         this.my_clients.remove(id);
         this.my_clients_last_packet.remove(id);
         this.my_clients_packets_queue.remove(id);
+
         this.clients_lock.unlock();
+    }
+
+    public void cleanClient(InetAddress addr, int id){
+        this.nodes_lock.lock();
+
+        this.last_packet_sent.get(addr).remove(id);
+        this.targetSockets.get(addr).remove(id);
+        this.packets_in_queue.get(addr).remove(id);
+
+        this.nodes_lock.unlock();
     }
 
     public String toString(){
@@ -276,7 +331,7 @@ public class AnonGW {
         System.out.println(me.toString());
 
         // UDP
-        new Thread(new UDP2(me)).start();
+        new Thread(new UDP(me)).start();
 
         // TCP
         new Thread(new TCP(me)).start();
@@ -308,8 +363,8 @@ public class AnonGW {
             }
 
             if(cmd.equals("socket")){
-                for(Client c : me.my_clients.values()){
-                    System.out.println(c.getSocket().isClosed());
+                for(Socket c : me.my_clients.values()){
+                    System.out.println(c.isClosed());
                 }
             }
         }

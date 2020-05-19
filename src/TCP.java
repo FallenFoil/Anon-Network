@@ -1,8 +1,5 @@
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.SocketException;
 import java.net.ServerSocket;
-
 
 public class TCP implements Runnable{
     private AnonGW anon;
