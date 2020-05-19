@@ -297,7 +297,14 @@ public class AnonGW {
                 me.targetSockets.clear();
             }
             if(cmd.equals("print")){
+                System.out.println(me.my_clients.toString() + "\n");
+                System.out.println(me.my_clients_last_packet.toString() + "\n");
+                System.out.println(me.my_clients_packets_queue.toString() + "\n");
+                System.out.println(me.next_client_ID + "\n");
 
+                System.out.println(me.last_packet_sent.toString() + "\n");
+                System.out.println(me.packets_in_queue.toString() + "\n");
+                System.out.println(me.targetSockets.toString() + "\n");
             }
         }
     }
