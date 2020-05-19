@@ -4,6 +4,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class TCP_Server implements Runnable{
     private AnonGW anon;
@@ -24,16 +26,23 @@ public class TCP_Server implements Runnable{
         try {
             InputStream in = this.server.getInputStream();
 
+            Lock lock = new ReentrantLock();
+
             while (true){
                 byte[] buffer = new byte[8192 - UDP_Packet.n_bytes];
+                int bytesRead = 0;
 
-                int bytesRead = in.read(buffer);
+                lock.lock();
+                bytesRead = in.read(buffer);
+                lock.unlock();
 
                 UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buffer);
                 fragment++;
 
                 DatagramSocket socket = new DatagramSocket();
+                lock.lock();
                 socket.send(packet.toDatagramPacket());
+                lock.unlock();
                 socket.close();
 
                 if (bytesRead == -1)
