@@ -34,7 +34,9 @@ public class TCP_Client implements Runnable{
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
 
                 UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, c.getId(), buff);
-                fragment++;
+                if(buff.length > 0){
+                    fragment++;
+                }
 
                 //UDP.send(packet);
                 DatagramSocket socket = new DatagramSocket();

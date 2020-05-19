@@ -30,7 +30,6 @@ public class UDP_Packet{
 
         if(this.data_size > 0){
             this.data = new byte[this.data_size];
-
             wrapped.get(this.data);
         }
     }
@@ -99,5 +98,9 @@ public class UDP_Packet{
 
     public void setFrom_address(InetAddress from){
         this.from_address = from;
+    }
+
+    public int getData_size(){
+        return this.data_size;
     }
 }

@@ -39,6 +39,10 @@ public class UDP2 implements Runnable{
 
                 UDP_Packet p = new UDP_Packet(packet);
 
+                if(p.getData_size() == 0){
+                    break;
+                }
+
                 Socket so = null;
 
                 InetAddress addr = packet.getAddress();

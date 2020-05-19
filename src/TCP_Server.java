@@ -40,7 +40,9 @@ public class TCP_Server implements Runnable{
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
 
                 UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buff);
-                fragment++;
+                if(buff.length > 0){
+                    fragment++;
+                }
 
                 DatagramSocket socket = new DatagramSocket();
                 lock.lock();
