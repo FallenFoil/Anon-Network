@@ -280,5 +280,25 @@ public class AnonGW {
 
         // TCP
         new Thread(new TCP(me)).start();
+
+        Scanner scan = new Scanner(System.in);
+
+        while(true){
+            String cmd = scan.nextLine();
+
+            if(cmd.equals("reset")){
+                me.my_clients.clear();
+                me.my_clients_last_packet.clear();
+                me.my_clients_packets_queue.clear();
+                me.next_client_ID = 0;
+
+                me.last_packet_sent.clear();
+                me.packets_in_queue.clear();
+                me.targetSockets.clear();
+            }
+            if(cmd.equals("print")){
+
+            }
+        }
     }
 }
