@@ -37,9 +37,10 @@ public class UDP_Packet{
 
         if(this.data_size > 0){
             this.data = new byte[this.data_size];
-            byte[] encrypBytes = new byte[this.data_size];
-            wrapped.get(encrypBytes);
-            this.data = AESEncryptionManager.decryptData(target + ":" + port, encrypBytes);
+            wrapped.get(this.data);
+            //byte[] encrypBytes = new byte[this.data_size];
+            //wrapped.get(encrypBytes);
+            //this.data = AESEncryptionManager.decryptData(target + ":" + port, encrypBytes);
         }
     }
 

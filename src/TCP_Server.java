@@ -47,7 +47,7 @@ public class TCP_Server implements Runnable{
                 }
 
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
-
+/*
                 byte[] bytesEncrypt = AESEncryptionManager.encryptData(this.anon.getTargetServer() + ":" + this.anon.getPort(), buff);
 
                 final int limit = UDP.Packet_Size - UDP_Packet.n_bytes;
@@ -65,9 +65,10 @@ public class TCP_Server implements Runnable{
                     lock.unlock();
 
                     bytesEncrypt = Arrays.copyOfRange(bytesEncrypt, limit, bytesEncrypt.length);
-                }
+                }*/
 
-                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, bytesEncrypt);
+                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buff);
+                //UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, bytesEncrypt);
                 if(buff.length > 0){
                     fragment++;
                 }
@@ -79,23 +80,10 @@ public class TCP_Server implements Runnable{
 
             this.server_socket.close();
         }
-        catch (IOException e) {
+        catch (Exception e) {
             e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        } catch (InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
-            e.printStackTrace();
-        } finally {
+        }
+        finally {
             this.anon.cleanClient(this.node, this.client_ID);
             try {
                 UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 666, this.client_ID, "fechou".getBytes());
