@@ -15,11 +15,11 @@ public class TCP_Client implements Runnable{
 
     @Override
     public void run() {
+        InetAddress client_address = this.client.getInetAddress();
+
+        Client c = this.anon.createNewClient(client_address, this.client);
+        int id = c.getId();
         try {
-            InetAddress client_address = this.client.getInetAddress();
-
-            Client c = this.anon.createNewClient(client_address, this.client);
-
             InputStream in = this.client.getInputStream();
             InetAddress node = this.anon.getRandomNode();
 
@@ -44,7 +44,12 @@ public class TCP_Client implements Runnable{
             }
         }
         catch (IOException e) {
-            // Read/write failed --> connection is broken --> exit the thread
+            //this.anon.cleanClient(c.getId());
+        }
+        finally {
+            this.anon.my_clients.remove(id);
+            this.anon.my_clients_packets_queue.remove(id);
+            this.anon.my_clients_last_packet.remove(id);
         }
     }
 }

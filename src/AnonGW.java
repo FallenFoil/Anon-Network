@@ -306,6 +306,12 @@ public class AnonGW {
                 System.out.println(me.packets_in_queue.toString() + "\n");
                 System.out.println(me.targetSockets.toString() + "\n");
             }
+
+            if(cmd.equals("socket")){
+                for(Client c : me.my_clients.values()){
+                    System.out.println(c.getSocket().isClosed());
+                }
+            }
         }
     }
 }

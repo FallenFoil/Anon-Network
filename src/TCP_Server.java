@@ -45,9 +45,9 @@ public class TCP_Server implements Runnable{
             // Read/write failed --> connection is broken --> exit the thread
         }
         finally {
-            this.anon.last_packet_sent.remove(this.node);
-            this.anon.targetSockets.remove(this.node);
-            this.anon.packets_in_queue.remove(this.node);
+            this.anon.last_packet_sent.get(this.node).remove(this.client_ID);
+            this.anon.targetSockets.get(this.node);
+            this.anon.packets_in_queue.get(this.node);
         }
     }
 }
