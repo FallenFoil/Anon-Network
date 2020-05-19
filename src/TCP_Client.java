@@ -1,7 +1,14 @@
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
 public class TCP_Client implements Runnable{
@@ -34,7 +41,25 @@ public class TCP_Client implements Runnable{
 
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
 
-                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, buff);
+                byte[] bytesEncrypt = AESEncryptionManager.encryptData(this.anon.getTargetServer() + ":" + this.anon.getPort(), buff);
+
+                final int limit = UDP.Packet_Size - UDP_Packet.n_bytes;
+
+
+                while(bytesEncrypt.length > limit){
+                    byte[] send = Arrays.copyOf(bytesEncrypt, limit);
+
+                    UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, send);
+                    if(buff.length > 0){
+                        fragment++;
+                    }
+
+                    UDP.send(packet);
+
+                    bytesEncrypt = Arrays.copyOfRange(bytesEncrypt, limit, bytesEncrypt.length);
+                }
+
+                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, bytesEncrypt);
                 if(buff.length > 0){
                     fragment++;
                 }
@@ -42,10 +67,9 @@ public class TCP_Client implements Runnable{
                 UDP.send(packet);
             }
         }
-        catch(IOException e) {
+        catch(IOException | InvalidKeySpecException | NoSuchAlgorithmException | BadPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException e) {
             e.printStackTrace();
-        }
-        finally{
+        } finally{
             this.anon.cleanClient(client_ID);
         }
     }

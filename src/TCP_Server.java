@@ -1,8 +1,15 @@
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -41,7 +48,26 @@ public class TCP_Server implements Runnable{
 
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
 
-                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buff);
+                byte[] bytesEncrypt = AESEncryptionManager.encryptData(this.anon.getTargetServer() + ":" + this.anon.getPort(), buff);
+
+                final int limit = UDP.Packet_Size - UDP_Packet.n_bytes;
+
+                while(bytesEncrypt.length > limit){
+                    byte[] send = Arrays.copyOf(bytesEncrypt, limit);
+
+                    UDP_Packet packet = new UDP_Packet( true, fragment, this.node, 6666, this.client_ID, send);
+                    if(buff.length > 0){
+                        fragment++;
+                    }
+
+                    lock.lock();
+                    UDP.send(packet);
+                    lock.unlock();
+
+                    bytesEncrypt = Arrays.copyOfRange(bytesEncrypt, limit, bytesEncrypt.length);
+                }
+
+                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, bytesEncrypt);
                 if(buff.length > 0){
                     fragment++;
                 }
@@ -55,8 +81,21 @@ public class TCP_Server implements Runnable{
         }
         catch (IOException e) {
             e.printStackTrace();
-        }
-        finally {
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } finally {
             this.anon.cleanClient(this.node, this.client_ID);
             try {
                 UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 666, this.client_ID, "fechou".getBytes());

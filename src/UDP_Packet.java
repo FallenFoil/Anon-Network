@@ -1,6 +1,13 @@
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 public class UDP_Packet{
     public static final int n_bytes = 4*4;
@@ -17,7 +24,7 @@ public class UDP_Packet{
     private byte[] data;
     private int data_size;
 
-    public UDP_Packet(DatagramPacket packet){
+    public UDP_Packet(DatagramPacket packet, String target, int port) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException {
         this.to_address = packet.getAddress();
         this.port = packet.getPort();
 
@@ -30,7 +37,9 @@ public class UDP_Packet{
 
         if(this.data_size > 0){
             this.data = new byte[this.data_size];
-            wrapped.get(this.data);
+            byte[] encrypBytes = new byte[this.data_size];
+            wrapped.get(encrypBytes);
+            this.data = AESEncryptionManager.decryptData(target + ":" + port, encrypBytes);
         }
     }
 

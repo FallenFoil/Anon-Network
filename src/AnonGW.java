@@ -12,16 +12,16 @@ public class AnonGW {
     private Lock rand_lock;
     private Random rand;
 
-    public Map<Integer, Socket> my_clients;                                     // <Client_ID, Client>
-    public Map<Integer, Integer> my_clients_last_packet;                        // <Client_ID, Last_Packet>
-    public Map<Integer, List<UDP_Packet>> my_clients_packets_queue;             // <Client_ID, UDP_Packets>
-    public int next_client_ID;
-    public Lock clients_lock;
+    private Map<Integer, Socket> my_clients;                                     // <Client_ID, Client>
+    private Map<Integer, Integer> my_clients_last_packet;                        // <Client_ID, Last_Packet>
+    private Map<Integer, List<UDP_Packet>> my_clients_packets_queue;             // <Client_ID, UDP_Packets>
+    private int next_client_ID;
+    private Lock clients_lock;
 
-    public Map<InetAddress, Map<Integer, Integer>> last_packet_sent;            // <Node,  <Client_ID, Last_Packet>>
-    public Map<InetAddress, Map<Integer, List<UDP_Packet>>> packets_in_queue;   // <Node,  <Client_ID, UDP_Packets>>
-    public Map<InetAddress, Map<Integer, Socket>> targetSockets;                // <Node, <Client_ID, Server_Socket>>
-    public Lock nodes_lock;
+    private Map<InetAddress, Map<Integer, Integer>> last_packet_sent;            // <Node,  <Client_ID, Last_Packet>>
+    private Map<InetAddress, Map<Integer, List<UDP_Packet>>> packets_in_queue;   // <Node,  <Client_ID, UDP_Packets>>
+    private Map<InetAddress, Map<Integer, Socket>> targetSockets;                // <Node, <Client_ID, Server_Socket>>
+    private Lock nodes_lock;
 
     public UDP_Packet proximoEnviar(InetAddress addr, int client_ID){
         int last_packet;

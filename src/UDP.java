@@ -1,6 +1,13 @@
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.*;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +44,7 @@ public class UDP implements Runnable{
             try {
                 socket.receive(packet);
 
-                UDP_Packet p = new UDP_Packet(packet);
+                UDP_Packet p = new UDP_Packet(packet, this.anon.getTargetServer(), this.anon.getPort());
 
                 if(p.getData_size() == 0){
                     break;
@@ -161,6 +168,20 @@ public class UDP implements Runnable{
                 }
             }
             catch (IOException e){
+                e.printStackTrace();
+            } catch (InvalidKeySpecException e) {
+                e.printStackTrace();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (BadPaddingException e) {
+                e.printStackTrace();
+            } catch (InvalidKeyException e) {
+                e.printStackTrace();
+            } catch (InvalidAlgorithmParameterException e) {
+                e.printStackTrace();
+            } catch (NoSuchPaddingException e) {
+                e.printStackTrace();
+            } catch (IllegalBlockSizeException e) {
                 e.printStackTrace();
             }
 
