@@ -1,102 +1,51 @@
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class TCP_Client implements Runnable{
-    private Socket client;
     private AnonGW anon;
+    private Socket client;
 
-
-
-    ReentrantLock lock = new ReentrantLock();
-    Condition condition = lock.newCondition();
-    ArrayList<byte[]> buffer = new ArrayList<>();
-    boolean sending = false;
-    boolean toSend = false;
-    boolean reading = true;
-
-
-    public TCP_Client(AnonGW a, Socket so){
-        this.anon = a;
+    public TCP_Client(AnonGW anon, Socket so){
+        this.anon = anon;
         this.client = so;
-
     }
 
     @Override
     public void run() {
-        try{
-            this.client.setSoTimeout(5000);
-            InputStream client_in = this.client.getInputStream();
-
-            byte[] buff = TCP.read(client_in);
-
+        try {
             InetAddress client_address = this.client.getInetAddress();
 
             Client c = this.anon.createNewClient(client_address, this.client);
 
-            UDP_Packet packet = new UDP_Packet(c.getNext_sequence(), false, 0, 1, this.anon.getRandomNode(), 6666, c.getId(), buff);
+            InputStream in = this.client.getInputStream();
+            InetAddress node = this.anon.getRandomNode();
 
-            UDP.send(packet);
-        }
-        catch(IOException e){
-            e.printStackTrace();
-        }
+            int fragment = 0;
 
-        System.out.println("Connection closed");
-    }
+            while (true) {
+                byte[] buffer = new byte[8192 - UDP_Packet.n_bytes];
 
-    /*
-    @Override
-    public void run() {
+                int bytesRead = in.read(buffer);
 
-        //LER
-        new Thread(()->{
-            try {
-                while(true){
-                    byte[] buff = new byte[4096];
-                    int count = client.getInputStream().read(buff);
-                    if(count == -1) break;
+                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, c.getId(), buffer);
+                fragment++;
 
-                    while(sending) condition.await();
-                    lock.lock();
-                    reading = true;
-                    buffer.add(buff);
-                    toSend = true;
-                    reading = false;
-                    condition.signal();
+                //UDP.send(packet);
+                DatagramSocket socket = new DatagramSocket();
+                socket.send(packet.toDatagramPacket());
+                socket.close();
 
-                    lock.unlock();
-                }
-            }catch (Exception e){
-
+                if (bytesRead == -1)
+                    break;
             }
-        }).start();
 
-
-        //ENVIAR
-        new Thread(()->{
-            try{
-                while(!toSend || !reading) condition.await();
-                lock.lock();
-                sending = true;
-                byte[] send = buffer.get(1);
-                buffer.remove(1);
-                InetAddress client_address = this.client.getInetAddress();
-                Client c = this.anon.createNewClient(client_address, this.client);
-                UDP_Packet packet = new UDP_Packet(c.getNext_sequence(), false, 0, 1, this.anon.getRandomNode(), 6666, c.getId(), send);
-                UDP.send(packet);
-                if(buffer.size()==0) toSend = false;
-                sending = false;
-                condition.signal();
-                lock.unlock();
-            }catch (Exception e){
-
-            }
-        }).start();
+            this.anon.cleanClient(c.getId());
+        }
+        catch (IOException e) {
+            // Read/write failed --> connection is broken --> exit the thread
+        }
     }
-    */
 }

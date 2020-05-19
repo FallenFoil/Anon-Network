@@ -1,7 +1,6 @@
-package Teste;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -31,9 +30,11 @@ public class TCP_Server implements Runnable{
                 int bytesRead = in.read(buffer);
 
                 UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buffer);
-
-
                 fragment++;
+                //UDP.send(packet);
+                DatagramSocket socket = new DatagramSocket();
+                socket.send(packet.toDatagramPacket());
+                socket.close();
 
                 if (bytesRead == -1)
                     break;

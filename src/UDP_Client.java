@@ -1,63 +1,93 @@
 import java.io.IOException;
-import java.net.DatagramPacket;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class UDP_Client implements Runnable{
     private AnonGW anon;
-    private DatagramPacket packet;
+    private UDP_Packet packet;
+    private Socket target;
 
-    public UDP_Client(AnonGW a, DatagramPacket p){
+    public UDP_Client(AnonGW a, UDP_Packet p, Socket s){
         this.anon = a;
         this.packet = p;
+        this.target = s;
     }
 
     @Override
     public void run() {
-        UDP_Packet p = new UDP_Packet(this.packet);
+	    try{
+	        int last_packet;
+            int client_id = this.packet.getClient_id();
 
-        if(p.isResponse()){
-            Client c = this.anon.getClient(p.getClient_id());
-            if(c != null){
-                Socket so = c.getSocket();
+            if(!this.packet.isResponse()){
+                InetAddress from = this.packet.getFrom();
 
-                System.out.println("O 1º Anon recebeu isto:\n" + new String(p.getData()));
+                last_packet = this.anon.last_packet_sent.get(from).get(client_id);
 
-                try {
-                    TCP.send(so.getOutputStream(), p.getData());
-                    this.anon.cleanClient(p.getClient_id());
+                if(this.packet.getFragment() == last_packet + 1){
+                    while(this.packet != null && this.packet.getFragment() == last_packet + 1){
+                        if(!this.target.isClosed()){
+                            //TCP.send(this.target.getOutputStream(), this.packet.getData());
+                            OutputStream out = this.target.getOutputStream();
+                            byte[] buff = this.packet.getData();
+                            try{
+                                System.out.println("Enviar Mensagem\n");
+                                out.write(buff);
+                                out.flush();
+                                System.out.println("Mensagem Enviada\n");
+                            }
+                            catch(SocketException e){
+                                System.out.println("Cant send to socket");
+                            }
+                        }
+
+                        last_packet++;
+
+                        this.anon.packets_in_queue.get(from).get(client_id).remove(this.packet);
+
+                        this.packet = this.anon.getSmallestFragment(from, client_id);
+                    }
                 }
-                catch (IOException e) {
-                    e.printStackTrace();
+                else{
+                    this.anon.packets_in_queue.get(from).get(client_id).add(this.packet);
                 }
             }
             else{
-                System.out.println("An error has occurred. Client object (client_ID = " + p.getClient_id() + ") doesn't exists. Terminating service.");
+                last_packet = this.anon.my_clients_last_packet.get(client_id);
+
+                if(this.packet.getFragment() == last_packet + 1){
+                    while(this.packet != null && this.packet.getFragment() == last_packet + 1){
+                        if(!this.target.isClosed()){
+                            //TCP.send(this.target.getOutputStream(), this.packet.getData());
+                            OutputStream out = this.target.getOutputStream();
+                            byte[] buff = this.packet.getData();
+                            try{
+                                System.out.println("Enviar Mensagem\n");
+                                out.write(buff);
+                                out.flush();
+                                System.out.println("Mensagem Enviada\n");
+                            }
+                            catch(SocketException e){
+                                System.out.println("Cant send to socket");
+                            }
+                        }
+
+                        last_packet++;
+
+                        this.anon.my_clients_packets_queue.get(client_id).remove(this.packet);
+
+                        this.packet = this.anon.getSmallestFragment(null, client_id);
+                    }
+                }
+                else{
+                    this.anon.my_clients_packets_queue.get(client_id).add(this.packet);
+                }
             }
         }
-        else{
-            try {
-                Socket target = new Socket(this.anon.getTargetServer(), this.anon.getPort());
-
-                TCP.send(target.getOutputStream(), p.getData());
-
-                target.setSoTimeout(0);
-
-                byte[] response = TCP.read(target.getInputStream());
-
-                target.close();
-
-                InetAddress from = this.packet.getAddress();
-
-                System.out.println("O 2º Anon recebeu isto:\n" + new String(response));
-
-                UDP_Packet udp_response = new UDP_Packet(p.getSequence() + 1, true, 1, 1, from, 6666, p.getClient_id(), response);
-
-                UDP.send(udp_response);
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
+        catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

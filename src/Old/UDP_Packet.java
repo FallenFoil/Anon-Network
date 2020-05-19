@@ -1,16 +1,17 @@
+package Old;
+
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
 public class UDP_Packet{
-    public static final int n_bytes = 4*4;
+    private int sequence;
     private int response;
     private int fragment;
+    private int total_fragments;
 
-    private InetAddress from_address;
-    private InetAddress to_address;
+    private InetAddress address;
     private int port;
-
 
     private int client_id;
 
@@ -18,14 +19,16 @@ public class UDP_Packet{
     private int data_size;
 
     public UDP_Packet(DatagramPacket packet){
-        this.to_address = packet.getAddress();
+        this.address = packet.getAddress();
         this.port = packet.getPort();
 
         ByteBuffer wrapped = ByteBuffer.wrap(packet.getData());
 
+        this.sequence = wrapped.getInt();
         this.client_id = wrapped.getInt();
         this.response = wrapped.getInt();
         this.fragment = wrapped.getInt();
+        this.total_fragments = wrapped.getInt();
         this.data_size = wrapped.getInt();
 
         if(this.data_size > 0){
@@ -35,25 +38,8 @@ public class UDP_Packet{
         }
     }
 
-    public DatagramPacket toDatagramPacket(){
-        int packet_size = UDP_Packet.n_bytes + this.data_size;
-        ByteBuffer b = ByteBuffer.allocate(packet_size);
-
-        b.putInt(this.client_id);
-        b.putInt(this.response);
-        b.putInt(this.fragment);
-        b.putInt(this.data_size);
-
-        if(this.data_size > 0){
-            b.put(this.data);
-        }
-
-        byte[] buff = b.array();
-
-        return new DatagramPacket(buff, buff.length, to_address, port);
-    }
-
-    public UDP_Packet(boolean response, int fragment, InetAddress addr, int port, int client_id, byte[] data){
+    public UDP_Packet(int sequence, boolean response, int fragment, int total_fragments, InetAddress addr, int port, int client_id, byte[] data){
+        this.sequence = sequence;
         if(response){
             this.response = 1;
         }
@@ -61,9 +47,9 @@ public class UDP_Packet{
             this.response = 0;
         }
         this.fragment = fragment;
+        this.total_fragments = total_fragments;
 
-        this.from_address = null;
-        this.to_address = addr;
+        this.address = addr;
         this.port = port;
 
         this.client_id = client_id;
@@ -85,19 +71,31 @@ public class UDP_Packet{
         return this.client_id;
     }
 
+    public int getSequence(){
+        return this.sequence;
+    }
+
     public byte[] getData(){
         return this.data;
     }
 
-    public int getFragment(){
-        return this.fragment;
-    }
+    public DatagramPacket toDatagramPacket(){
+        int packet_size = 4*6 + this.data_size;
+        ByteBuffer b = ByteBuffer.allocate(packet_size);
 
-    public InetAddress getFrom(){
-        return this.from_address;
-    }
+        b.putInt(this.sequence);
+        b.putInt(this.client_id);
+        b.putInt(this.response);
+        b.putInt(this.fragment);
+        b.putInt(this.total_fragments);
+        b.putInt(this.data_size);
 
-    public void setFrom_address(InetAddress from){
-        this.from_address = from;
+        if(this.data_size > 0){
+            b.put(this.data);
+        }
+
+        byte[] buff = b.array();
+
+        return new DatagramPacket(buff, buff.length, address, port);
     }
 }

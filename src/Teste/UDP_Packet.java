@@ -20,6 +20,7 @@ public class UDP_Packet{
     private int data_size;
 
     public UDP_Packet(DatagramPacket packet){
+        this.from_address = null;
         this.to_address = packet.getAddress();
         this.port = packet.getPort();
 

@@ -2,7 +2,6 @@ package Teste;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -33,12 +32,13 @@ public class TCP_Client implements Runnable{
                 int bytesRead = in.read(buffer);
 
                 UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, c.getId(), buffer);
-                fragment++;
 
-                //UDP.send(packet);
-                DatagramSocket socket = new DatagramSocket();
-                socket.send(packet.toDatagramPacket());
-                socket.close();
+                this.anon.lock_udp.lock();
+                this.anon.queue_udp.add(packet);
+                this.anon.lock_udp.unlock();
+                this.anon.con_udp.signalAll();
+
+                fragment++;
 
                 if (bytesRead == -1)
                     break;

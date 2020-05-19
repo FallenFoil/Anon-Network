@@ -5,12 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class UDP implements Runnable{
+public class UDP2 implements Runnable{
     private AnonGW anon;
     private DatagramSocket socket;
     public static final int Packet_Size = 8192;
 
-    public UDP(AnonGW a){
+    public UDP2(AnonGW a){
         this.anon = a;
 
         try{
@@ -45,14 +45,25 @@ public class UDP implements Runnable{
 
                 p.setFrom_address(addr);
 
+
+
                 if(!p.isResponse()){
                     this.anon.nodes_lock.lock();
-                    if(this.anon.targetSockets.containsKey(addr)){
+                    if(this.anon.targetSockets.containsKey(addr) && this.anon.targetSockets.get(addr).containsKey(client_id)){
                         so = this.anon.targetSockets.get(addr).get(client_id);
-                        this.anon.nodes_lock.unlock();
+                        if(p.getFragment() == this.anon.last_packet_sent.get(addr).get(client_id) + 1){
+                            TCP.send(so.getOutputStream(), p.getData());
+                            this.anon.last_packet_sent.get(addr).put(client_id, p.getFragment());
+                            while((p = this.anon.proximoEnviar(addr,client_id)) != null){
+                                TCP.send(so.getOutputStream(), p.getData());
+                                this.anon.last_packet_sent.get(addr).put(client_id, p.getFragment());
+                            }
+                        }
+                        else{
+                            this.anon.packets_in_queue.get(addr).get(client_id).add(p);
+                        }
                     }
                     else{
-                        this.anon.nodes_lock.unlock();
                         so = new Socket(this.anon.getTargetServer(), this.anon.getPort());
 
                         Map<Integer, Socket> map1 = new HashMap<>();
@@ -64,25 +75,43 @@ public class UDP implements Runnable{
 
                         Map<Integer, List<UDP_Packet>> map3 = new HashMap<>();
                         List<UDP_Packet> list = new ArrayList<>();
+
+                        if(p.getFragment() == this.anon.last_packet_sent.get(addr).get(client_id) + 1){
+                            TCP.send(so.getOutputStream(), p.getData());
+                        }
+                        else{
+                            list.add(p);
+                        }
                         map3.put(client_id, list);
 
+                        //Thread t = new Thread(new UDP2_Client(this.anon, so, addr, client_id));
+                        //t.start();
 
-                        this.anon.nodes_lock.lock();
                         this.anon.targetSockets.put(addr, map1);
                         this.anon.last_packet_sent.put(addr, map2);
                         this.anon.packets_in_queue.put(addr, map3);
-                        this.anon.nodes_lock.unlock();
 
                         new Thread(new TCP_Server(this.anon, so, addr, client_id)).start();
                     }
-                }
-                else{
-                    this.anon.nodes_lock.lock();
-                    so = this.anon.getClient(client_id).getSocket();
                     this.anon.nodes_lock.unlock();
                 }
+                else{
+                    this.anon.clients_lock.lock();
+                    so = this.anon.getClient(client_id).getSocket();
+                    this.anon.clients_lock.unlock();
 
-                new Thread(new UDP_Client(this.anon, p, so)).start();
+                    if(p.getFragment() == this.anon.my_clients_last_packet.get(client_id) + 1){
+                        TCP.send(so.getOutputStream(), p.getData());
+                        this.anon.my_clients_last_packet.put(client_id, p.getFragment());
+                        while((p = this.anon.proximoEnviar(null, client_id)) != null){
+                            TCP.send(so.getOutputStream(), p.getData());
+                            this.anon.my_clients_last_packet.put(client_id, p.getFragment());
+                        }
+                    }
+                    else{
+                        this.anon.my_clients_packets_queue.get(client_id).add(p);
+                    }
+                }
             }
             catch (IOException e){
                 e.printStackTrace();
