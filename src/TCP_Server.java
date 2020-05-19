@@ -20,10 +20,9 @@ public class TCP_Server implements Runnable{
 
     @Override
     public void run() {
+        int fragment = 0;
         try {
             InputStream in = this.server.getInputStream();
-
-            int fragment = 0;
 
             while (true){
                 byte[] buffer = new byte[8192 - UDP_Packet.n_bytes];
@@ -50,7 +49,7 @@ public class TCP_Server implements Runnable{
             this.anon.targetSockets.get(this.node).remove(this.client_ID);
             this.anon.packets_in_queue.get(this.node).remove(this.client_ID);
             try {
-                UDP_Packet packet = new UDP_Packet(true, -1, this.node, 666, this.client_ID, new byte[0]);
+                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 666, this.client_ID, "fechou".getBytes());
                 DatagramSocket socket = new DatagramSocket();
                 socket.send(packet.toDatagramPacket());
                 socket.close();

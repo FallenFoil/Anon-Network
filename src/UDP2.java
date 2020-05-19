@@ -122,8 +122,10 @@ public class UDP2 implements Runnable{
                     this.anon.nodes_lock.unlock();
                 }
                 else{
-                    if(p.getFragment() == -1){
-                        this.anon.cleanClient(p.getClient_id());
+                    if(p.getData().length == 6){
+                        if(new String(p.getData()).equals("fechou")) {
+                            this.anon.cleanClient(p.getClient_id());
+                        }
                     }
                     else {
                         this.anon.clients_lock.lock();
