@@ -29,9 +29,11 @@ public class AnonGW {
             this.clients_lock.lock();
             last_packet = this.my_clients_last_packet.get(client_ID);
 
-            for(UDP_Packet p : this.my_clients_packets_queue.get(client_ID)){
-                if(p.getFragment() == last_packet + 1){
-                    return p;
+            if(this.my_clients_packets_queue.get(client_ID) != null){
+                for(UDP_Packet p : this.my_clients_packets_queue.get(client_ID)){
+                    if(p.getFragment() == last_packet + 1){
+                        return p;
+                    }
                 }
             }
             this.clients_lock.unlock();
@@ -40,9 +42,11 @@ public class AnonGW {
             this.nodes_lock.lock();
             last_packet = this.last_packet_sent.get(addr).get(client_ID);
 
-            for(UDP_Packet p : this.packets_in_queue.get(addr).get(client_ID)){
-                if(p.getFragment() == last_packet + 1){
-                    return p;
+            if(this.packets_in_queue.get(addr).get(client_ID) != null) {
+                for (UDP_Packet p : this.packets_in_queue.get(addr).get(client_ID)) {
+                    if (p.getFragment() == last_packet + 1) {
+                        return p;
+                    }
                 }
             }
             this.nodes_lock.unlock();

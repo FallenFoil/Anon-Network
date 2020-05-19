@@ -1,5 +1,6 @@
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
@@ -28,7 +29,7 @@ public class AESEncryptionManager {
         GCMParameterSpec parameterSpec = new GCMParameterSpec(128, iv);
 
         //Encryption mode on!
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
 
         //Encrypt the data
         byte [] encryptedData = cipher.doFinal(data);
