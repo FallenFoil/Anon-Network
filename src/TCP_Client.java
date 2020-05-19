@@ -41,8 +41,7 @@ public class TCP_Client implements Runnable{
 
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
 
-                /*
-                byte[] bytesEncrypt = AESEncryptionManager.encryptData(this.anon.getTargetServer() + ":" + this.anon.getPort(), buff);
+                byte[] bytesEncrypt = Encrypter.encryptData(this.anon.getTargetServer(), buff);
 
                 final int limit = UDP.Packet_Size - UDP_Packet.n_bytes;
 
@@ -58,10 +57,10 @@ public class TCP_Client implements Runnable{
                     UDP.send(packet);
 
                     bytesEncrypt = Arrays.copyOfRange(bytesEncrypt, limit, bytesEncrypt.length);
-                }*/
+                }
 
-                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, buff);
-                //UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, bytesEncrypt);
+                //UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, buff);
+                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, bytesEncrypt);
                 if(buff.length > 0){
                     fragment++;
                 }

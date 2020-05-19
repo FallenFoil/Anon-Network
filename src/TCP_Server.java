@@ -47,11 +47,12 @@ public class TCP_Server implements Runnable{
                 }
 
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
-/*
-                byte[] bytesEncrypt = AESEncryptionManager.encryptData(this.anon.getTargetServer() + ":" + this.anon.getPort(), buff);
+
+                byte[] bytesEncrypt = Encrypter.encryptData(this.anon.getTargetServer(), buff);
 
                 final int limit = UDP.Packet_Size - UDP_Packet.n_bytes;
 
+                assert bytesEncrypt != null;
                 while(bytesEncrypt.length > limit){
                     byte[] send = Arrays.copyOf(bytesEncrypt, limit);
 
@@ -65,10 +66,10 @@ public class TCP_Server implements Runnable{
                     lock.unlock();
 
                     bytesEncrypt = Arrays.copyOfRange(bytesEncrypt, limit, bytesEncrypt.length);
-                }*/
+                }
 
-                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buff);
-                //UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, bytesEncrypt);
+                //UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buff);
+                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, bytesEncrypt);
                 if(buff.length > 0){
                     fragment++;
                 }

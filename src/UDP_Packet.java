@@ -37,10 +37,10 @@ public class UDP_Packet{
 
         if(this.data_size > 0){
             this.data = new byte[this.data_size];
-            wrapped.get(this.data);
-            //byte[] encrypBytes = new byte[this.data_size];
-            //wrapped.get(encrypBytes);
-            //this.data = AESEncryptionManager.decryptData(target + ":" + port, encrypBytes);
+            //wrapped.get(this.data);
+            byte[] encrypBytes = new byte[this.data_size];
+            wrapped.get(encrypBytes);
+            this.data = Encrypter.decryptData(target, encrypBytes);
         }
     }
 
@@ -100,10 +100,6 @@ public class UDP_Packet{
 
     public int getFragment(){
         return this.fragment;
-    }
-
-    public InetAddress getFrom(){
-        return this.from_address;
     }
 
     public void setFrom_address(InetAddress from){
