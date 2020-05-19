@@ -44,9 +44,6 @@ public class TCP_Client implements Runnable{
             }
         }
         catch (IOException e) {
-            //this.anon.cleanClient(c.getId());
-        }
-        finally {
             this.anon.my_clients.remove(id);
             this.anon.my_clients_packets_queue.remove(id);
             this.anon.my_clients_last_packet.remove(id);

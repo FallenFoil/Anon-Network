@@ -3,6 +3,7 @@ import java.io.InputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class TCP_Server implements Runnable{
     private AnonGW anon;
@@ -31,7 +32,7 @@ public class TCP_Server implements Runnable{
 
                 UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buffer);
                 fragment++;
-                //UDP.send(packet);
+
                 DatagramSocket socket = new DatagramSocket();
                 socket.send(packet.toDatagramPacket());
                 socket.close();
@@ -46,8 +47,16 @@ public class TCP_Server implements Runnable{
         }
         finally {
             this.anon.last_packet_sent.get(this.node).remove(this.client_ID);
-            this.anon.targetSockets.get(this.node);
-            this.anon.packets_in_queue.get(this.node);
+            this.anon.targetSockets.get(this.node).remove(this.client_ID);
+            this.anon.packets_in_queue.get(this.node).remove(this.client_ID);
+            try {
+                UDP_Packet packet = new UDP_Packet(true, -1, this.node, 666, this.client_ID, new byte[0]);
+                DatagramSocket socket = new DatagramSocket();
+                socket.send(packet.toDatagramPacket());
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
