@@ -11,18 +11,6 @@ public class TCP implements Runnable{
         this.anon = a;
     }
 
-    public static void send(OutputStream out, byte[] buff) throws IOException {
-        try{
-            System.out.println("Enviar Mensagem\n");
-            out.write(buff);
-            out.flush();
-            System.out.println("Mensagem Enviada\n");
-        }
-        catch(SocketException e){
-            System.out.println("Cant send to socket");
-        }
-    }
-
     @Override
     public void run() {
         try{

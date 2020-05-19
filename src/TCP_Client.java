@@ -39,10 +39,9 @@ public class TCP_Client implements Runnable{
                 socket.close();
 
                 if (bytesRead == -1)
+                    this.anon.cleanClient(c.getId());
                     break;
             }
-
-            this.anon.cleanClient(c.getId());
         }
         catch (IOException e) {
             // Read/write failed --> connection is broken --> exit the thread
