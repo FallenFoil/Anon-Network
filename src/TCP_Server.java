@@ -4,6 +4,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -36,7 +37,9 @@ public class TCP_Server implements Runnable{
                 bytesRead = in.read(buffer);
                 lock.unlock();
 
-                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buffer);
+                byte[] buff = Arrays.copyOf(buffer, bytesRead);
+
+                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buff);
                 fragment++;
 
                 DatagramSocket socket = new DatagramSocket();

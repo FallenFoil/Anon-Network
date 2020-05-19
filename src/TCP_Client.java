@@ -3,6 +3,7 @@ import java.io.InputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Arrays;
 
 public class TCP_Client implements Runnable{
     private AnonGW anon;
@@ -30,7 +31,9 @@ public class TCP_Client implements Runnable{
 
                 int bytesRead = in.read(buffer);
 
-                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, c.getId(), buffer);
+                byte[] buff = Arrays.copyOf(buffer, bytesRead);
+
+                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, c.getId(), buff);
                 fragment++;
 
                 //UDP.send(packet);
