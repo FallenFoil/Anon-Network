@@ -1,15 +1,6 @@
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -31,6 +22,12 @@ public class TCP_Server implements Runnable{
     public void run() {
         int fragment = 0;
 
+        String key = this.anon.getTargetServer();
+
+        for(int i=0; key.length() < 16; i++){
+            key = key + key.charAt(i);
+        }
+
         try {
             InputStream in = this.server_socket.getInputStream();
             Lock lock = new ReentrantLock();
@@ -48,34 +45,38 @@ public class TCP_Server implements Runnable{
 
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
 
-                byte[] bytesEncrypt = AESEncryptionManager.encryptData(this.anon.getTargetServer(), buff);
+                if(buff.length > 0){
+                    if(buff.length > (UDP.Packet_Size - UDP_Packet.n_bytes) / 2){
+                        byte[] part1 = AESEncryptionManager.encryptData(key, Arrays.copyOf(buff, (UDP.Packet_Size - UDP_Packet.n_bytes) / 2));
+                        byte[] part2 = AESEncryptionManager.encryptData(key, Arrays.copyOfRange(buff, (UDP.Packet_Size - UDP_Packet.n_bytes) / 2, buff.length));
 
-                final int limit = UDP.Packet_Size - UDP_Packet.n_bytes;
+                        UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, part1, (UDP.Packet_Size - UDP_Packet.n_bytes) / 2);
+                        lock.lock();
+                        UDP.send(packet);
+                        lock.unlock();
 
-                assert bytesEncrypt != null;
-                while(bytesEncrypt.length > limit){
-                    byte[] send = Arrays.copyOf(bytesEncrypt, limit);
+                        fragment++;
 
-                    UDP_Packet packet = new UDP_Packet( true, fragment, this.node, 6666, this.client_ID, send);
-                    if(buff.length > 0){
+                        int size = buff.length - ((UDP.Packet_Size - UDP_Packet.n_bytes) / 2);
+
+                        packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, part2, size);
+                        lock.lock();
+                        UDP.send(packet);
+                        lock.unlock();
+
                         fragment++;
                     }
+                    else{
+                        byte[] bytesEncrypt = AESEncryptionManager.encryptData(key, buff);
 
-                    lock.lock();
-                    UDP.send(packet);
-                    lock.unlock();
+                        UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, bytesEncrypt, bytesRead);
+                        lock.lock();
+                        UDP.send(packet);
+                        lock.unlock();
 
-                    bytesEncrypt = Arrays.copyOfRange(bytesEncrypt, limit, bytesEncrypt.length);
+                        fragment++;
+                    }
                 }
-
-                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, bytesEncrypt);
-                if(buff.length > 0){
-                    fragment++;
-                }
-
-                lock.lock();
-                UDP.send(packet);
-                lock.unlock();
             }
 
             this.server_socket.close();
@@ -86,10 +87,10 @@ public class TCP_Server implements Runnable{
         finally {
             this.anon.cleanClient(this.node, this.client_ID);
             try {
-                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 666, this.client_ID, "fechou".getBytes());
+                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 666, this.client_ID, AESEncryptionManager.encryptData(key, "fechou".getBytes()), 6);
                 UDP.send(packet);
             }
-            catch (IOException e) {
+            catch (Exception e) {
                 e.printStackTrace();
             }
         }

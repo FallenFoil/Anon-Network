@@ -1,14 +1,6 @@
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
 public class TCP_Client implements Runnable{
@@ -30,6 +22,12 @@ public class TCP_Client implements Runnable{
         try {
             InputStream in = this.client_socket.getInputStream();
 
+            String key = this.anon.getTargetServer();
+
+            for(int i=0; key.length() < 16; i++){
+                key = key + key.charAt(i);
+            }
+
             while (true) {
                 byte[] buffer = new byte[UDP.Packet_Size - UDP_Packet.n_bytes];
 
@@ -41,30 +39,31 @@ public class TCP_Client implements Runnable{
 
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
 
-                byte[] bytesEncrypt = AESEncryptionManager.encryptData(this.anon.getTargetServer(), buff);
+                if(buff.length > 0){
+                    if(buff.length > (UDP.Packet_Size - UDP_Packet.n_bytes) / 2){
+                        byte[] part1 = AESEncryptionManager.encryptData(key, Arrays.copyOf(buff, (UDP.Packet_Size - UDP_Packet.n_bytes) / 2));
+                        byte[] part2 = AESEncryptionManager.encryptData(key, Arrays.copyOfRange(buff, (UDP.Packet_Size - UDP_Packet.n_bytes) / 2, buff.length));
 
-                final int limit = UDP.Packet_Size - UDP_Packet.n_bytes;
+                        UDP_Packet packet = new UDP_Packet(false, fragment, node, 6666, client_ID, part1, (UDP.Packet_Size - UDP_Packet.n_bytes) / 2);
+                        UDP.send(packet);
 
+                        fragment++;
 
-                while(bytesEncrypt.length > limit){
-                    byte[] send = Arrays.copyOf(bytesEncrypt, limit);
+                        int size = buff.length - ((UDP.Packet_Size - UDP_Packet.n_bytes) / 2);
 
-                    UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, send);
-                    if(buff.length > 0){
+                        packet = new UDP_Packet(false, fragment, node, 6666, client_ID, part2, size);
+                        UDP.send(packet);
+
                         fragment++;
                     }
+                    else{
+                        byte[] bytesEncrypt = AESEncryptionManager.encryptData(key, buff);
 
-                    UDP.send(packet);
-
-                    bytesEncrypt = Arrays.copyOfRange(bytesEncrypt, limit, bytesEncrypt.length);
+                        UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, bytesEncrypt, bytesRead);
+                        UDP.send(packet);
+                        fragment++;
+                    }
                 }
-
-                UDP_Packet packet = new UDP_Packet( false, fragment, node, 6666, client_ID, bytesEncrypt);
-                if(buff.length > 0){
-                    fragment++;
-                }
-
-                UDP.send(packet);
             }
         }
         catch(Exception e) {
