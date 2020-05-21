@@ -1,3 +1,5 @@
+package Sem_Encrypt;
+
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;

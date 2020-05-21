@@ -1,15 +1,21 @@
-package Teste;
+package Sem_Encrypt;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 public class UDP_Packet{
     public static final int n_bytes = 4*4;
     private int response;
     private int fragment;
 
-    private InetAddress from_address;
     private InetAddress to_address;
     private int port;
 
@@ -19,8 +25,7 @@ public class UDP_Packet{
     private byte[] data;
     private int data_size;
 
-    public UDP_Packet(DatagramPacket packet){
-        this.from_address = null;
+    public UDP_Packet(DatagramPacket packet, String target, int port) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, InvalidKeySpecException {
         this.to_address = packet.getAddress();
         this.port = packet.getPort();
 
@@ -33,7 +38,6 @@ public class UDP_Packet{
 
         if(this.data_size > 0){
             this.data = new byte[this.data_size];
-
             wrapped.get(this.data);
         }
     }
@@ -65,7 +69,6 @@ public class UDP_Packet{
         }
         this.fragment = fragment;
 
-        this.from_address = null;
         this.to_address = addr;
         this.port = port;
 
@@ -96,11 +99,7 @@ public class UDP_Packet{
         return this.fragment;
     }
 
-    public InetAddress getFrom(){
-        return this.from_address;
-    }
-
-    public void setFrom_address(InetAddress from){
-        this.from_address = from;
+    public int getData_size(){
+        return this.data_size;
     }
 }

@@ -1,15 +1,9 @@
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+package Sem_Encrypt;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -48,27 +42,7 @@ public class TCP_Server implements Runnable{
 
                 byte[] buff = Arrays.copyOf(buffer, bytesRead);
 
-                byte[] bytesEncrypt = AESEncryptionManager.encryptData(this.anon.getTargetServer(), buff);
-
-                final int limit = UDP.Packet_Size - UDP_Packet.n_bytes;
-
-                assert bytesEncrypt != null;
-                while(bytesEncrypt.length > limit){
-                    byte[] send = Arrays.copyOf(bytesEncrypt, limit);
-
-                    UDP_Packet packet = new UDP_Packet( true, fragment, this.node, 6666, this.client_ID, send);
-                    if(buff.length > 0){
-                        fragment++;
-                    }
-
-                    lock.lock();
-                    UDP.send(packet);
-                    lock.unlock();
-
-                    bytesEncrypt = Arrays.copyOfRange(bytesEncrypt, limit, bytesEncrypt.length);
-                }
-
-                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, bytesEncrypt);
+                UDP_Packet packet = new UDP_Packet(true, fragment, this.node, 6666, this.client_ID, buff);
                 if(buff.length > 0){
                     fragment++;
                 }

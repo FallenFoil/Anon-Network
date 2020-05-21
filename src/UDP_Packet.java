@@ -14,7 +14,6 @@ public class UDP_Packet{
     private int response;
     private int fragment;
 
-    private InetAddress from_address;
     private InetAddress to_address;
     private int port;
 
@@ -37,10 +36,9 @@ public class UDP_Packet{
 
         if(this.data_size > 0){
             this.data = new byte[this.data_size];
-            //wrapped.get(this.data);
             byte[] encrypBytes = new byte[this.data_size];
             wrapped.get(encrypBytes);
-            this.data = Encrypter.decryptData(target, encrypBytes);
+            this.data = AESEncryptionManager.decryptData(target, encrypBytes);
         }
     }
 
@@ -71,7 +69,6 @@ public class UDP_Packet{
         }
         this.fragment = fragment;
 
-        this.from_address = null;
         this.to_address = addr;
         this.port = port;
 
@@ -100,10 +97,6 @@ public class UDP_Packet{
 
     public int getFragment(){
         return this.fragment;
-    }
-
-    public void setFrom_address(InetAddress from){
-        this.from_address = from;
     }
 
     public int getData_size(){
