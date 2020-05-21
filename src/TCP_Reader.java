@@ -3,11 +3,11 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
 
-public class TCP_Client implements Runnable{
+public class TCP_Reader implements Runnable{
     private AnonGW anon;
     private Socket client_socket;
 
-    public TCP_Client(AnonGW anon, Socket so){
+    public TCP_Reader(AnonGW anon, Socket so){
         this.anon = anon;
         this.client_socket = so;
     }

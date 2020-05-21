@@ -14,7 +14,7 @@ public class TCP implements Runnable{
             ServerSocket ss = new ServerSocket(this.anon.getPort());
 
             while(true){
-                new Thread(new TCP_Client(this.anon, ss.accept())).start();
+                new Thread(new TCP_Reader(this.anon, ss.accept())).start();
             }
         }
         catch(IOException e){

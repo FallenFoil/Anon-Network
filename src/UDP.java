@@ -44,7 +44,7 @@ public class UDP implements Runnable{
             try {
                 socket.receive(packet);
 
-                UDP_Packet p = new UDP_Packet(packet, this.anon.getTargetServer(), this.anon.getPort());
+                UDP_Packet p = new UDP_Packet(packet, this.anon.getTargetServer());
 
                 if(p.getData_size() == 0){
                     break;
