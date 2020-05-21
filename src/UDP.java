@@ -122,7 +122,7 @@ public class UDP implements Runnable{
                         this.anon.putLastPacket(addr, map2);
                         this.anon.putQueue(addr, map3);
 
-                        new Thread(new TCP_Server(this.anon, so, addr, client_id)).start();
+                        new Thread(new TCP_Reader(this.anon, so, addr, client_id, true)).start();
                     }
                 }
                 else{
