@@ -51,7 +51,7 @@ public class UDP_Packet{
     }
 
     public DatagramPacket toDatagramPacket(){
-        int packet_size = UDP_Packet.n_bytes + this.data_size;
+        int packet_size = UDP_Packet.n_bytes + this.encrypt_size;
         ByteBuffer b = ByteBuffer.allocate(packet_size);
 
         b.putInt(this.client_id);
