@@ -23,6 +23,23 @@ public class AnonGW {
     private Map<InetAddress, Map<Integer, Socket>> targetSockets;                // <Node, <Client_ID, Server_Socket>>
     private Lock nodes_lock;
 
+    public AnonGW(){
+        this.nodes = new ArrayList<>();
+        this.rand = new Random();
+        this.rand_lock = new ReentrantLock();
+
+        this.my_clients = new HashMap<>();
+        this.my_clients_last_packet = new HashMap<>();
+        this.my_clients_packets_queue = new HashMap<>();
+        this.next_client_ID = 0;
+        this.clients_lock = new ReentrantLock();
+
+        this.last_packet_sent = new HashMap<>();
+        this.packets_in_queue = new HashMap<>();
+        this.targetSockets = new HashMap<>();
+        this.nodes_lock = new ReentrantLock();
+    }
+
     public UDP_Packet proximoEnviar(InetAddress addr, int client_ID){
         int last_packet;
         if(addr == null){
@@ -53,23 +70,6 @@ public class AnonGW {
         }
 
         return null;
-    }
-
-    public AnonGW(){
-        this.nodes = new ArrayList<>();
-        this.rand = new Random();
-        this.rand_lock = new ReentrantLock();
-
-        this.my_clients = new HashMap<>();
-        this.my_clients_last_packet = new HashMap<>();
-        this.my_clients_packets_queue = new HashMap<>();
-        this.next_client_ID = 0;
-        this.clients_lock = new ReentrantLock();
-
-        this.last_packet_sent = new HashMap<>();
-        this.packets_in_queue = new HashMap<>();
-        this.targetSockets = new HashMap<>();
-        this.nodes_lock = new ReentrantLock();
     }
 
     public void addNodes(InetAddress node){
