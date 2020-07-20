@@ -1,5 +1,0 @@
-- Verificar bugs (eles existem em todo lado)
-- Fazer com que a leitura e a receção dos pacotes seja dinamica em relação ao tamanho. Talvez usar fragmentos, ou seja, separar o array de bytes em arrays mais pequenos e mandar varios pacotes UDP. Para isso é necessário adicionar uma variavel "fragmento" na classe do pacote
-- Fazer a verificaçao da sequencia dos pacotes
-- Apagar objeto Client depois do serviço estar concluido
-- Melhor mensagens de consola para ver o que se passa
