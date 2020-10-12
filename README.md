@@ -9,6 +9,10 @@ All data sent by the Origin client over the TCP connection (not exposed) is rece
 
 ![threads](Thread_Diagram-1.png)
 
+## Encryption
+
+For the encryption of the data being transmitted, **AnonGW** uses **AES** algorithm with **CBC** mode and **PKCS5Padding** padding if needed.
+
 ## Executing
 
 To execute an AnonGW node, you use the following template:
